@@ -25,16 +25,6 @@ def get_stream():
             )
 
 
-def grid(origin, distance, height, width):
-    """
-    origin: (x, y)
-    """
-    return [
-        (origin[0] + distance * i, origin[1] + distance * j)
-        for i in range(width)
-        for j in range(height)
-        ]
-
 def img_stream():
     stream = get_stream()
     if(stream.status_code == 200):
