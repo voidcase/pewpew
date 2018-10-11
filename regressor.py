@@ -28,6 +28,10 @@ def load_data(path):
     filenames = listdir(path)
     return np.stack([cv2.imread(path+fn, 0) for fn in filenames])
 
+def gen_bullshit_y_data(length):
+    from random import randrange
+    return np.array([randrange(0,1000) for i in range(length)])
+
 if __name__ == '__main__':
     data = load_data('./data/')
     assert False
