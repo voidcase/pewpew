@@ -1,8 +1,9 @@
 import cv2
 import numpy as np
-from scipy.misc import imresize
+from skimage.transform import resize
 from tensorflow import keras
 from tensorflow.nn import relu
+
 
 
 def build_model():
@@ -26,13 +27,13 @@ def build_model():
             optimizer='adam',
             loss='mean_squared_error',
             )
-
+    return md
 
 
 def load_data(path):
     from os import listdir
     filenames = listdir(path)
-    return np.stack([imresize(cv2.imread(path+fn, 1), 0.2) for fn in filenames])
+    return np.stack([prep_img(cv2.imread(path+fn, 1)) for fn in filenames])
 
 
 def gen_bullshit_y_data(length):
@@ -40,13 +41,42 @@ def gen_bullshit_y_data(length):
     return np.array([randrange(0,1000) for i in range(length)])
 
 
-def trained_model():
-    x = load_data('data/')
+def stupid_model(x):
     y = gen_bullshit_y_data(x.shape[0])
     md = build_model()
     md.fit(x,y)
     return md
 
 
+def grid(origin, distance, shape):
+    """
+    origin: (x, y)
+    """
+    return [
+        (origin[0] + distance * i, origin[1] + distance * j)
+        for i in range(shape[0])
+        for j in range(shape[1])
+        ]
+
+def center_of(img):
+    return tuple(a//2 for a in img.shape)
+
+def prep_img(img):
+    # TODO cropping
+    return resize(img, (100,100))
+
+
+def create_heatmap(img, model, origo, mapshape, spacing):
+    import matplotlib.pyplot as plt
+    points = grid(origo, spacing, mapshape)
+    plt.imshow(img)
+    plt.scatter([x for x,y in points], [y for x,y in points])
+    x = np.stack([prep_img(img) for p in points])
+    yp = model.predict(x)
+    return points, yp
+
+
 if __name__ == '__main__':
-    trained_model()
+    x = load_data('data/')
+    md = stupid_model(x)
+    pts, yp = create_heatmap(x[0], md, center_of(x[0]), (3,3), 5)
