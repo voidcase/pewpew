@@ -33,7 +33,7 @@ def build_model():
 def load_data(path):
     from os import listdir
     filenames = listdir(path)
-    return np.stack([prep_img(cv2.imread(path+fn, 1)) for fn in filenames])
+    return np.stack([cv2.imread(path+fn, 1) for fn in filenames])
 
 
 def gen_bullshit_y_data(length):
@@ -58,25 +58,39 @@ def grid(origin, distance, shape):
         for j in range(shape[1])
         ]
 
-def center_of(img):
-    return tuple(a//2 for a in img.shape)
 
-def prep_img(img):
+def center_of(img):
+    return tuple(img.shape[a]//2 for a in [1,0])
+
+
+def prep_img(img, center_on=None):
     # TODO cropping
-    return resize(img, (100,100))
+    if not center_on:
+        center_on = center_of(img)
+    cx, cy = center_on 
+    imrad = min(cx, cy, img.shape[0]-cy, img.shape[1]-cx)
+    img = img[cy-imrad:cy+imrad, cx-imrad:cx+imrad]
+    return resize(img, (128,128))
 
 
 def create_heatmap(img, model, origo, mapshape, spacing):
-    import matplotlib.pyplot as plt
     points = grid(origo, spacing, mapshape)
-    plt.imshow(img)
-    plt.scatter([x for x,y in points], [y for x,y in points])
-    x = np.stack([prep_img(img) for p in points])
-    yp = model.predict(x)
+    x = np.stack([prep_img(img, center_on=p) for p in points])
+    yp = model.predict(x).reshape(-1)
     return points, yp
 
 
+def draw_heatmap(img, points, yp):
+    import matplotlib.pyplot as plt
+    plt.imshow(img)
+    px, py = tuple([point[d] for point in points] for d in [0, 1])
+    plt.scatter(px, py, c=yp, cmap='hot')
+    plt.show()
+
+
 if __name__ == '__main__':
-    x = load_data('data/')
+    raw = load_data('data/')
+    x = np.stack(prep_img(im) for im in raw)
     md = stupid_model(x)
-    pts, yp = create_heatmap(x[0], md, center_of(x[0]), (3,3), 5)
+    pts, yp = create_heatmap(raw[0], md, (10, 10), (30, 30), 3)
+    draw_heatmap(x[0], pts, yp)
