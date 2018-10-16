@@ -3,7 +3,8 @@ import requests
 import numpy as np
 from time import time
 
-def get_stream():
+
+def get_stream() -> requests.Response:
     cookies = {
         'session': '4eb6807d-ed71-46d8-a7d5-5e1ea0c0ca12',
     }
@@ -17,12 +18,12 @@ def get_stream():
     }
 
     return requests.get(
-            'http://w-v-kitslab-mxcube-1:8081/mxcube/api/v0.1/sampleview/camera/subscribe',
-            headers=headers,
-            cookies=cookies,
-            stream=True,
-            timeout=2
-            )
+        'http://w-v-kitslab-mxcube-1:8081/mxcube/api/v0.1/sampleview/camera/subscribe',
+        headers=headers,
+        cookies=cookies,
+        stream=True,
+        timeout=2
+        )
 
 
 def img_stream():
@@ -38,16 +39,40 @@ def img_stream():
                 img_buffer = img_buffer[end+2:]
                 i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                 t = time()
-                yield (i, time())
+                yield (i, t)
     else:
         print("Received unexpected status code {}".format(stream.status_code))
 
 
+def find_frame(buf: list, timestamp: float) -> tuple:
+    def residual(t):
+        return abs(timestamp - t)
+    closest_frame = None
+    closest_time = None
+    for frame, frame_time in buf:
+        if not closest_frame or residual(frame_time) < residual(closest_time):
+            closest_frame = frame
+            closest_time = frame_time
+    return (closest_frame, closest_time)
+
+
+def test_find_frame():
+    b = [
+        ('a', 1.5),
+        ('b', 2.7),
+        ('c', 4.7),
+    ]
+    f, t = find_frame(b, 2.6)
+    assert f == 'b'
+    assert t == 2.7
+
 
 if __name__ == '__main__':
+    camera_buffer = []
     gen = img_stream()
     prev = time()
     while True:
         i, t = next(gen)
+        camera_buffer.append((i, t))
         print(t - prev)
         prev = t
