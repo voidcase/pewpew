@@ -5,7 +5,6 @@ from tensorflow import keras
 from tensorflow.nn import relu
 
 
-
 def build_model():
     md = keras.models.Sequential()
     md.add(keras.layers.Conv2D(
@@ -38,13 +37,13 @@ def load_data(path):
 
 def gen_bullshit_y_data(length):
     from random import randrange
-    return np.array([randrange(0,1000) for i in range(length)])
+    return np.array([randrange(0, 1000) for i in range(length)])
 
 
 def stupid_model(x):
     y = gen_bullshit_y_data(x.shape[0])
     md = build_model()
-    md.fit(x,y)
+    md.fit(x, y)
     return md
 
 
@@ -60,17 +59,17 @@ def grid(origin, distance, shape):
 
 
 def center_of(img):
-    return tuple(img.shape[a]//2 for a in [1,0])
+    return tuple(img.shape[a]//2 for a in [1, 0])
 
 
 def prep_img(img, center_on=None):
     # TODO cropping
     if not center_on:
         center_on = center_of(img)
-    cx, cy = center_on 
+    cx, cy = center_on
     imrad = min(cx, cy, img.shape[0]-cy, img.shape[1]-cx)
     img = img[cy-imrad:cy+imrad, cx-imrad:cx+imrad]
-    return resize(img, (128,128))
+    return resize(img, (128, 128))
 
 
 def create_heatmap(img, model, origo, mapshape, spacing):
