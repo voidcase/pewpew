@@ -16,14 +16,13 @@ def get_stream() -> requests.Response:
         'DNT': '1',
         'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:62.0) Gecko/20100101 Firefox/62.0',
     }
-
     return requests.get(
-        'http://w-v-kitslab-mxcube-1:8081/mxcube/api/v0.1/sampleview/camera/subscribe',
-        headers=headers,
-        cookies=cookies,
-        stream=True,
-        timeout=2
-        )
+            'http://w-v-kitslab-mxcube-1:8081/mxcube/api/v0.1/sampleview/camera/subscribe',
+            headers=headers,
+            cookies=cookies,
+            stream=True,
+            timeout=2
+            )
 
 
 def img_stream():
