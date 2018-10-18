@@ -2,6 +2,7 @@ import cv2
 import requests
 import numpy as np
 from time import time
+import sqlite3 as sql
 
 
 def get_stream() -> requests.Response:
@@ -66,12 +67,47 @@ def test_find_frame():
     assert t == 2.7
 
 
+def create_db(path):
+    conn = sql.connect(f'{path}/meta.db')
+    conn.execute(
+        """
+        CREATE TABLE IF NOT EXISTS images (
+            uuid VARCHAR(100) UNIQUE NOT NULL,
+            timestamp INTEGER NOT NULL
+        );
+        """)
+    return conn
+
+
+def save_buffer(buf, path):
+    from uuid import uuid4
+    print('saving buffer')
+    db = create_db(path)
+    if len(buf) == 0:
+        return
+    query = 'insert into images (uuid, timestamp) values '
+    for img, timestamp in buf:
+        image_id = uuid4()
+        # with open(f'{path}/images/{image_id}.jpg', 'wb') as imfile:
+        #     imfile.write(img)
+        cv2.imwrite(f'{path}/images/{image_id}.jpg', img)
+        query += f'("{image_id}", "{timestamp}"),'
+    query = query[:-1]  # remove last ','
+    query += ';'
+    db.execute(query)
+    db.commit()
+    db.close()
+
+
 if __name__ == '__main__':
+    PATH = 'data/cam'
     camera_buffer = []
     gen = img_stream()
     prev = time()
-    while True:
+    print('watching camera stream...')
+    for iteration in range(5):
         i, t = next(gen)
         camera_buffer.append((i, t))
         print(t - prev)
         prev = t
+    save_buffer(camera_buffer, PATH)
