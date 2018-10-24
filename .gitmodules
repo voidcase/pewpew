@@ -1,3 +1,6 @@
 [submodule "lucid2"]
 	path = lucid2
 	url = https://github.com/mxcube/lucid2
+[submodule "mxcube3"]
+	path = mxcube3
+	url = https://github.com/mxcube/mxcube3.git
