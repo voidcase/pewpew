@@ -4,7 +4,8 @@ import numpy as np
 from time import time
 import sqlite3 as sql
 
-REAL = False
+REAL = True
+# REAL = False
 
 API_PATH = '/mxcube/api/v0.1'
 
@@ -66,16 +67,17 @@ def img_stream():
     stream = get_stream()
     if(stream.status_code == 200):
         img_buffer = bytes()
-        for chunk in stream.iter_content(chunk_size=256):
+        for chunk in stream.iter_content(chunk_size=64):
             img_buffer += chunk
             start = img_buffer.find(b'\xff\xd8')
             end = img_buffer.find(b'\xff\xd9')
             if start != -1 and end != -1:
                 jpg = img_buffer[start:end+2]
                 img_buffer = img_buffer[end+2:]
-                i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                # i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                 t = time()
-                yield (i, t)
+                # yield (i, t)
+                yield (jpg, t)
     else:
         print("Received unexpected status code {}".format(stream.status_code))
 
@@ -122,15 +124,22 @@ def save_buffer(buf, path):
     if len(buf) == 0:
         return
     query = 'insert into images (uuid, timestamp) values '
-    for img, timestamp in buf:
+    for jpg, timestamp in buf:
         image_id = uuid4()
-        cv2.imwrite(f'{path}/images/{image_id}.jpg', img)
+        i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+        cv2.imwrite(f'{path}/images/{image_id}.jpg', i)
         query += f'("{image_id}", "{timestamp}"),'
     query = query[:-1]  # remove last ',' from query
     query += ';'
     db.execute(query)
     db.commit()
     db.close()
+
+
+def eval_fps(buf):
+    delays = [b[1] - a[1] for a, b in zip(buf[:-1], buf[1:])]
+    avg_delay = sum(delays)/len(delays)
+    return 1/avg_delay
 
 
 if __name__ == '__main__':
@@ -145,7 +154,8 @@ if __name__ == '__main__':
         camera_buffer.append((i, t))
         if not REAL:
             print(t)
-        if t - last_save > 60:
+        if t - last_save > 30:
+            print('fps:{}'.format(eval_fps(camera_buffer)))
             save_buffer(camera_buffer, PATH)
             camera_buffer = []
             last_save = t
