@@ -1,4 +1,5 @@
 import requests
+from pathlib import Path
 from time import time
 from dataset import save_buffer
 
@@ -56,7 +57,8 @@ def eval_fps(buf):
 
 
 if __name__ == "__main__":
-    PATH = "data/cam"
+    base_dir = Path(__file__).parent
+    db_path = base_dir / "data/cam"
     camera_buffer = []
     s = setup_session()
     gen = img_stream()
@@ -70,6 +72,6 @@ if __name__ == "__main__":
             print(t)
         if t - last_save > 30:
             print("fps:{}".format(eval_fps(camera_buffer)))
-            save_buffer(camera_buffer, PATH)
+            save_buffer(camera_buffer, str(db_path))
             camera_buffer = []
             last_save = t
