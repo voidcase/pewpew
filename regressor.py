@@ -7,36 +7,27 @@ from tensorflow.nn import relu
 
 def build_model():
     md = keras.models.Sequential()
-    md.add(keras.layers.Conv2D(
-        filters=32,
-        kernel_size=3,
-        activation=relu,
-        ))
+    md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
     md.add(keras.layers.MaxPool2D(pool_size=2))
-    md.add(keras.layers.Conv2D(
-        filters=32,
-        kernel_size=3,
-        activation=relu,
-        ))
+    md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
     md.add(keras.layers.MaxPool2D(pool_size=2))
     md.add(keras.layers.Flatten())
     md.add(keras.layers.Dense(32, activation=relu))
     md.add(keras.layers.Dense(1, activation=relu))
-    md.compile(
-            optimizer='adam',
-            loss='mean_squared_error',
-            )
+    md.compile(optimizer='adam', loss='mean_squared_error')
     return md
 
 
 def load_data(path):
     from os import listdir
+
     filenames = listdir(path)
-    return np.stack([cv2.imread(path+fn, 1) for fn in filenames])
+    return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
 
 
 def gen_bullshit_y_data(length):
     from random import randrange
+
     return np.array([randrange(0, 1000) for i in range(length)])
 
 
@@ -48,18 +39,18 @@ def stupid_model(x):
 
 
 def grid(origin, distance, shape):
-    """
+    '''
     origin: (x, y)
-    """
+    '''
     return [
         (origin[0] + distance * i, origin[1] + distance * j)
         for i in range(shape[0])
         for j in range(shape[1])
-        ]
+    ]
 
 
 def center_of(img):
-    return tuple(img.shape[a]//2 for a in [1, 0])
+    return tuple(img.shape[a] // 2 for a in [1, 0])
 
 
 def prep_img(img, center_on=None):
@@ -67,8 +58,8 @@ def prep_img(img, center_on=None):
     if not center_on:
         center_on = center_of(img)
     cx, cy = center_on
-    imrad = min(cx, cy, img.shape[0]-cy, img.shape[1]-cx)
-    img = img[cy-imrad:cy+imrad, cx-imrad:cx+imrad]
+    imrad = min(cx, cy, img.shape[0] - cy, img.shape[1] - cx)
+    img = img[cy - imrad : cy + imrad, cx - imrad : cx + imrad]
     return resize(img, (128, 128))
 
 
@@ -81,6 +72,7 @@ def create_heatmap(img, model, origo, mapshape, spacing):
 
 def draw_heatmap(img, points, yp):
     import matplotlib.pyplot as plt
+
     plt.imshow(img)
     px, py = tuple([point[d] for point in points] for d in [0, 1])
     plt.scatter(px, py, c=yp, cmap='hot')

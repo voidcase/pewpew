@@ -6,29 +6,29 @@ from dataset import save_buffer
 # REAL = True
 REAL = False
 
-URL = "http://b-v-biomax-web-0:8081" if REAL else "http://w-v-kitslab-mxcube-1:8081"
-API_PATH = f"{URL}/mxcube/api/v0.1"
+URL = 'http://b-v-biomax-web-0:8081' if REAL else 'http://w-v-kitslab-mxcube-1:8081'
+API_PATH = f'{URL}/mxcube/api/v0.1'
 
-auth = dict(proposal="idtest000", password="")
+auth = dict(proposal='idtest000', password='')
 # login = dict(proposal='', password='')
 
 
 def setup_session() -> requests.Session:
     s = requests.Session()
-    res = s.post(f"{API_PATH}/login", json=auth)
+    res = s.post(f'{API_PATH}/login', json=auth)
     if not res.ok:
-        raise Exception(f"Error {res.status_code}: {res.reason}")
+        raise Exception(f'Error {res.status_code}: {res.reason}')
     return s
 
 
 def setblacklight(mode: bool):
     res = s.put(f"{API_PATH}/sampleview/backlight{'on' if mode else 'off'}", timeout=2)
     if not res.ok:
-        raise Exception(f"Error {res.status_code}: {res.reason}")
+        raise Exception(f'Error {res.status_code}: {res.reason}')
 
 
 def get_stream() -> requests.Response:
-    return s.get(f"{API_PATH}/sampleview/camera/subscribe", stream=True)
+    return s.get(f'{API_PATH}/sampleview/camera/subscribe', stream=True)
 
 
 def img_stream():
@@ -37,8 +37,8 @@ def img_stream():
         img_buffer = bytes()
         for chunk in stream.iter_content(chunk_size=64):
             img_buffer += chunk
-            start = img_buffer.find(b"\xff\xd8")
-            end = img_buffer.find(b"\xff\xd9")
+            start = img_buffer.find(b'\xff\xd8')
+            end = img_buffer.find(b'\xff\xd9')
             if start != -1 and end != -1:
                 jpg = img_buffer[start : end + 2]
                 img_buffer = img_buffer[end + 2 :]
@@ -47,7 +47,7 @@ def img_stream():
                 # yield (i, t)
                 yield (jpg, t)
     else:
-        print("Received unexpected status code {}".format(stream.status_code))
+        print('Received unexpected status code {}'.format(stream.status_code))
 
 
 def eval_fps(buf):
@@ -56,14 +56,14 @@ def eval_fps(buf):
     return 1 / avg_delay
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     base_dir = Path(__file__).parent
-    db_path = base_dir / "data/cam"
+    db_path = base_dir / 'data/cam'
     camera_buffer = []
     s = setup_session()
     gen = img_stream()
     prev = time()
-    print("watching camera stream...")
+    print('watching camera stream...')
     last_save = time()
     while True:
         i, t = next(gen)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
         if not REAL:
             print(t)
         if t - last_save > 30:
-            print("fps:{}".format(eval_fps(camera_buffer)))
+            print('fps:{}'.format(eval_fps(camera_buffer)))
             save_buffer(camera_buffer, str(db_path))
             camera_buffer = []
             last_save = t
