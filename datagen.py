@@ -1,8 +1,9 @@
 import cv2
 import requests
 import numpy as np
-from time import time
+import sys
 import sqlite3 as sql
+from time import time
 
 REAL = True
 # REAL = False
@@ -82,27 +83,25 @@ def img_stream():
         print("Received unexpected status code {}".format(stream.status_code))
 
 
-def find_frame(buf: list, timestamp: float) -> tuple:
-    def residual(t):
-        return abs(timestamp - t)
-    closest_frame = None
-    closest_time = None
-    for frame, frame_time in buf:
-        if not closest_frame or residual(frame_time) < residual(closest_time):
-            closest_frame = frame
-            closest_time = frame_time
-    return (closest_frame, closest_time)
-
-
-def test_find_frame():
-    b = [
-        ('a', 1.5),
-        ('b', 2.7),
-        ('c', 4.7),
-    ]
-    f, t = find_frame(b, 2.6)
-    assert f == 'b'
-    assert t == 2.7
+def closest_img(datapath, frame_time):
+    conn = sql.connect(f'{datapath}/meta.db')
+    query = """
+        SELECT uuid, timestamp
+        FROM images
+        ORDER BY abs(timestamp - ?)
+        LIMIT 1;
+        """
+    res = conn.execute(query, frame_time)
+    if len(res) < 1:
+        print('db is empty, get some images first.', file=sys.stderr)
+        sys.exit(1)
+    uuid, timestamp = list(res)[0]
+    impath = f'{datapath}/img/{uuid}.jpg'
+    img = cv2.imread(impath)
+    if not img:
+        print(f'file "{impath}" could not be read for some reason.', file=sys.stderr)
+        sys.exit(1)
+    return img, timestamp
 
 
 def create_db(path):
