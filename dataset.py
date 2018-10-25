@@ -34,7 +34,7 @@ def extract_ys(h5file: str):
 def compile_dataset(path):
     from os import listdir
     data = list()
-    for h5file in listdir(f'{path}/h5/'):
+    for h5file in listdir(f'{path}/h5/'):  #FIXME NO, only master files
         num_frames = to_cbfs(path, h5file)
         timestamps = get_timestamps(f'{path}/h5/{h5file}', num_frames)
         ys = extract_ys(h5file)
