@@ -76,13 +76,13 @@ def save_buffer(buf, path):
     if len(buf) == 0:
         return
     query = 'insert into images (uuid, timestamp) values '
+    insert_items = []
     for jpg, timestamp in buf:
         image_id = uuid4()
         i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
         cv2.imwrite(f'{path}/images/{image_id}.jpg', i)
-        query += f'("{image_id}", "{timestamp}"),'
-    query = query[:-1]  # remove last ',' from query
-    query += ';'
+        insert_items.append(f'("{image_id}", "{timestamp}")')
+    query += ','.join(insert_items) + ';'
     db.execute(query)
     db.commit()
     db.close()
