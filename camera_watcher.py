@@ -1,9 +1,6 @@
-import cv2
 import requests
-import numpy as np
-import sys
-import sqlite3 as sql
 from time import time
+from dataset import save_buffer
 
 REAL = True
 # REAL = False
@@ -81,58 +78,6 @@ def img_stream():
                 yield (jpg, t)
     else:
         print("Received unexpected status code {}".format(stream.status_code))
-
-
-def closest_img(datapath, frame_time):
-    conn = sql.connect(f'{datapath}/meta.db')
-    query = """
-        SELECT uuid, timestamp
-        FROM images
-        ORDER BY abs(timestamp - ?)
-        LIMIT 1;
-        """
-    res = conn.execute(query, frame_time)
-    if len(res) < 1:
-        print('db is empty, get some images first.', file=sys.stderr)
-        sys.exit(1)
-    uuid, timestamp = list(res)[0]
-    impath = f'{datapath}/img/{uuid}.jpg'
-    img = cv2.imread(impath)
-    if not img:
-        print(f'file "{impath}" could not be read for some reason.', file=sys.stderr)
-        sys.exit(1)
-    return img, timestamp
-
-
-def create_db(path):
-    conn = sql.connect(f'{path}/meta.db')
-    conn.execute(
-        """
-        CREATE TABLE IF NOT EXISTS images (
-            uuid VARCHAR(100) UNIQUE NOT NULL,
-            timestamp INTEGER NOT NULL
-        );
-        """)
-    return conn
-
-
-def save_buffer(buf, path):
-    from uuid import uuid4
-    print('saving buffer to disk at {}'.format(time()))
-    db = create_db(path)
-    if len(buf) == 0:
-        return
-    query = 'insert into images (uuid, timestamp) values '
-    for jpg, timestamp in buf:
-        image_id = uuid4()
-        i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
-        cv2.imwrite(f'{path}/images/{image_id}.jpg', i)
-        query += f'("{image_id}", "{timestamp}"),'
-    query = query[:-1]  # remove last ',' from query
-    query += ';'
-    db.execute(query)
-    db.commit()
-    db.close()
 
 
 def eval_fps(buf):
