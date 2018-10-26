@@ -1,18 +1,19 @@
 import h5py as h5
 import sys
 import sqlite3 as sql
+import config as cfg
+from pathlib import Path
 
 
-def get_timestamps(h5filepath: str, num_frames) -> list:
+def get_timestamps(master_path: Path, num_frames) -> list:
     from datetime import datetime
-
     DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
-    f = h5.File(h5filepath)
+    f = h5.File(str(master_path))
     try:
         datestr = f[DATEPATH].value
     except KeyError:
         print(
-            f"file '{h5filepath}' does not have dataset '{DATEPATH}, exiting.'",
+            f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."',
             file=sys.stderr,
         )
         sys.exit(1)
@@ -23,37 +24,49 @@ def get_timestamps(h5filepath: str, num_frames) -> list:
     return [start_time.timestamp() + frame_time * i for i in range(num_frames)]
 
 
-def to_cbfs(path: str, h5filename: str) -> int:
-    '''returns number of frames'''
-    # TODO
-    pass
+def extract_ys(masterpath: Path):
+    from diffractometrics import (
+            process_master,
+            signal_strength,
+            number_frames
+            )
+    cbf_dir = cfg.PATH_DIR_CBF / masterpath.name
+    cbf_dir.mkdir()
+    num_frames = number_frames(masterpath)
+    cbf_paths = process_master(
+            out=cbf_dir,
+            master=masterpath,
+            n=0,
+            m=num_frames,
+            )
+    return [signal_strength(cbf) for cbf in cbf_paths]
 
 
-def extract_ys(h5file: str):
-    # TODO
-    # NOTE: don't create cbfs if they already exist. because they will.
-    pass
-
-
-def compile_dataset(path):
+def compile_dataset():
     from os import listdir
+    from diffractometrics import number_frames
 
     data = list()
-    for h5file in listdir(f'{path}/h5/'):  # FIXME NO, only master files
-        num_frames = to_cbfs(path, h5file)
-        timestamps = get_timestamps(f'{path}/h5/{h5file}', num_frames)
-        ys = extract_ys(h5file)
+    masterpaths = [
+        Path(f'{cfg.PATH_DIR_H5}/{fname}')
+        for fname in listdir(cfg.PATH_DIR_H5)
+        if fname.endswith('_master.h5')
+        ]
+    for mpath in masterpaths:
+        num_frames = number_frames(mpath)
+        timestamps = get_timestamps(str(mpath), num_frames)
+        ys = extract_ys(mpath)
         uuids = [closest_img(t) for t in timestamps]
         data += list(zip(uuids, ys))
     # save to db
-    conn = database(path)
+    conn = database()
     query = 'INSERT INTO dataset (uuid, y) VALUES '
-    query += ",'.join([f'('{uuid}', {y})' for uuid, y in data]) + ';"
+    query += ','.join([f'("{uuid}", {y})' for uuid, y in data]) + ';'
     conn.execute(query)
 
 
-def database(path):
-    conn = sql.connect(f'{path}/meta.db')
+def database():
+    conn = sql.connect(cfg.PATH_DB)
     conn.execute(
         '''
         CREATE TABLE IF NOT EXISTS images (
@@ -73,14 +86,14 @@ def database(path):
     return conn
 
 
-def save_buffer(buf, path):
+def save_buffer(buf):
     from uuid import uuid4
     from time import time
     import cv2
     import numpy as np
 
     print('saving buffer to disk at {}'.format(time()))
-    db = database(path)
+    db = database()
     if len(buf) == 0:
         return
     query = 'insert into images (uuid, timestamp) values '
@@ -88,16 +101,16 @@ def save_buffer(buf, path):
     for jpg, timestamp in buf:
         image_id = uuid4()
         i = cv2.imdecode(np.fromstring(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
-        cv2.imwrite(f'{path}/images/{image_id}.jpg', i)
-        insert_items.append(f"('{image_id}', '{timestamp}')")
+        cv2.imwrite(f'{cfg.PATH_DIR_CAM}/{image_id}.jpg', i)
+        insert_items.append(f'("{image_id}", "{timestamp}")')
     query += ','.join(insert_items) + ';'
     db.execute(query)
     db.commit()
     db.close()
 
 
-def closest_img(datapath, frame_time):
-    conn = sql.connect(f'{datapath}/meta.db')
+def closest_img(frame_time):
+    conn = database()
     query = '''
         SELECT uuid, timestamp
         FROM images
