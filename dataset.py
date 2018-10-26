@@ -7,8 +7,7 @@ from pathlib import Path
 
 def get_timestamps(master_path: Path, num_frames) -> list:
     from datetime import datetime
-
-    DATEPATH = "entry/instrument/detector/detectorSpecific/data_collection_date"
+    DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
     f = h5.File(str(master_path))
     try:
         datestr = f[DATEPATH].value
@@ -18,9 +17,9 @@ def get_timestamps(master_path: Path, num_frames) -> list:
             file=sys.stderr,
         )
         sys.exit(1)
-    start_time = datetime.strptime(datestr.decode(), "%Y-%m-%dT%H:%M:%S.%f")
-    exposure_time = f["entry/instrument/detector/frame_time"].value
-    readout_time = f["entry/instrument/detector/detector_readout_time"].value
+    start_time = datetime.strptime(datestr.decode(), '%Y-%m-%dT%H:%M:%S.%f')
+    exposure_time = f['entry/instrument/detector/frame_time'].value
+    readout_time = f['entry/instrument/detector/detector_readout_time'].value
     frame_time = exposure_time + readout_time
     return [start_time.timestamp() + frame_time * i for i in range(num_frames)]
 
@@ -46,6 +45,7 @@ def extract_ys(masterpath: Path):
 def compile_dataset():
     from os import listdir
     from diffractometrics import number_frames
+
     data = list()
     masterpaths = [
         Path(f'{cfg.PATH_DIR_H5}/{fname}')
@@ -60,28 +60,28 @@ def compile_dataset():
         data += list(zip(uuids, ys))
     # save to db
     conn = database()
-    query = "INSERT INTO dataset (uuid, y) VALUES "
-    query += ",".join([f'("{uuid}", {y})' for uuid, y in data]) + ";"
+    query = 'INSERT INTO dataset (uuid, y) VALUES '
+    query += ','.join([f'("{uuid}", {y})' for uuid, y in data]) + ';'
     conn.execute(query)
 
 
 def database():
     conn = sql.connect(cfg.PATH_DB)
     conn.execute(
-        """
+        '''
         CREATE TABLE IF NOT EXISTS images (
             uuid VARCHAR(100) UNIQUE NOT NULL,
             timestamp REAL NOT NULL
         );
-        """
+        '''
     )
     conn.execute(
-        """
+        '''
         CREATE TABLE IF NOT EXISTS dataset (
             uuid VARCHAR(100) UNIQUE NOT NULL,
             y INTEGER NOT NULL
         );
-        """
+        '''
     )
     return conn
 
@@ -92,7 +92,7 @@ def save_buffer(buf):
     import cv2
     import numpy as np
 
-    print("saving buffer to disk at {}".format(time()))
+    print('saving buffer to disk at {}'.format(time()))
     db = database()
     if len(buf) == 0:
         return
@@ -111,15 +111,15 @@ def save_buffer(buf):
 
 def closest_img(frame_time):
     conn = database()
-    query = """
+    query = '''
         SELECT uuid, timestamp
         FROM images
         ORDER BY abs(timestamp - ?)
         LIMIT 1;
-        """
+        '''
     res = conn.execute(query, frame_time)
     if len(res) < 1:
-        print("db is empty, get some images first.", file=sys.stderr)
+        print('db is empty, get some images first.', file=sys.stderr)
         sys.exit(1)
     uuid, timestamp = list(res)[0]
     return uuid, timestamp
