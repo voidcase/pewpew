@@ -27,10 +27,10 @@ def process_master(out: Path, master: Path, n: int, m: int = None):
     if m is None:
         out_file = f'{str(out)}/out_{n:06}.cbf'
     else:
-        cmd[2] = f'{cmd[2]}:{m}'
+        cmd[2] = f'{n}:{m}'
         out_file = f'{str(out)}/out'
     cmd.append(out_file)
-    cmd = map(str, cmd)
+    cmd = list(map(str, cmd))
     res = subprocess.run(cmd)
     if res.returncode != 0:
         raise Exception(f"ERROR: error code {res.returncode}")

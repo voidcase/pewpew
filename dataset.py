@@ -1,8 +1,11 @@
 import h5py as h5
 import sys
 import sqlite3 as sql
-import config as cfg
+import config
 from pathlib import Path
+
+
+cfg = config.TestConfig()
 
 
 def get_timestamps(master_path: Path, num_frames) -> list:
@@ -36,7 +39,7 @@ def extract_ys(masterpath: Path):
     cbf_paths = process_master(
             out=cbf_dir,
             master=masterpath,
-            n=0,
+            n=1,
             m=num_frames,
             )
     return [signal_strength(cbf) for cbf in cbf_paths]
@@ -66,7 +69,7 @@ def compile_dataset():
 
 
 def database():
-    conn = sql.connect(cfg.PATH_DB)
+    conn = sql.connect(str(cfg.PATH_DB))
     conn.execute(
         '''
         CREATE TABLE IF NOT EXISTS images (
