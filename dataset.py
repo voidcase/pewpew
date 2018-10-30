@@ -27,21 +27,28 @@ def get_timestamps(master_path: Path, num_frames) -> list:
     return [start_time.timestamp() + frame_time * i for i in range(num_frames)]
 
 
-def extract_ys(masterpath: Path):
+def extract_ys(masterpath: Path, generate=False):
     from diffractometrics import (
             process_master,
             signal_strength,
             number_frames
             )
     cbf_dir = cfg.PATH_DIR_CBF / masterpath.name
-    cbf_dir.mkdir()
-    num_frames = number_frames(masterpath)
-    cbf_paths = process_master(
-            out=cbf_dir,
-            master=masterpath,
-            n=1,
-            m=num_frames,
-            )
+    if cbf_dir.is_dir():
+        print('found existing cbfs, using them')
+        cbf_paths = list(cbf_dir.iterdir())
+    elif generate:
+        print('found no cbfs, generating...')
+        cbf_dir.mkdir()
+        num_frames = number_frames(masterpath)
+        cbf_paths = process_master(
+                out=cbf_dir,
+                master=masterpath,
+                n=1,
+                m=num_frames,
+                )
+    else:
+        raise RuntimeError('No cbfs found, call with generate=True to generate them as needed')
     return [signal_strength(cbf) for cbf in cbf_paths]
 
 
@@ -53,23 +60,23 @@ def save_dataset(xy: list):
     conn.execute(query)
 
 
-def compile_dataset():
+def get_all_masters():
     from os import listdir
-    from diffractometrics import number_frames
-
-    data = list()
-    masterpaths = [
+    return [
         Path(f'{cfg.PATH_DIR_H5}/{fname}')
         for fname in listdir(cfg.PATH_DIR_H5)
         if fname.endswith('_master.h5')
         ]
-    for mpath in masterpaths:
-        num_frames = number_frames(mpath)
-        timestamps = get_timestamps(str(mpath), num_frames)
-        ys = extract_ys(mpath)
-        uuids = [closest_img(t) for t in timestamps]
-        data += list(zip(uuids, ys))
-    save_dataset(data)
+
+
+def compile_dataset(mpath: Path):
+    '''h5 -> dataset in database, assumes cbfs are made'''
+    from diffractometrics import number_frames
+    num_frames = number_frames(mpath)
+    timestamps = get_timestamps(str(mpath), num_frames)
+    ys = extract_ys(mpath)
+    uuids = [closest_img(t) for t in timestamps]
+    save_dataset(list(zip(uuids, ys)))
 
 
 def database():

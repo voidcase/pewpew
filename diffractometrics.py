@@ -54,7 +54,8 @@ def signal_strength(cbf: Path):
             stdout=subprocess.PIPE
             )
     res, err = proc.communicate()
-    print(err)
+    if err is not None:
+        print(err)
     m = re.search(r'^\s*Spot\sTotal\s*:\s*(\d+)', res.decode(), flags=re.MULTILINE)
     if m is None:
         raise Exception('Could not determine number of spots')
