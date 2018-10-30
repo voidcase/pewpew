@@ -7,6 +7,7 @@ import re
 EIGER_2_CBF = 'eiger2cbf'
 SIGNAL_STRENGTH = 'distl.signal_strength'
 BASE_DIR = Path('/mnt/maxiv/common/ML-crystals')
+DIALS_ENV = '/usr/local/dials-v1-11-4/dials_env.sh'
 master = BASE_DIR / 'h5/1149_2-Lysozyme_16_master.h5'
 
 
@@ -40,8 +41,9 @@ def process_master(out: Path, master: Path, n: int, m: int = None):
 
 
 def signal_strength(cbf: Path):
-    proc = subprocess.Popen(SIGNAL_STRENGTH + ' ' + str(cbf), shell=True, stdout=subprocess.PIPE)
-    res, _ = proc.communicate()
+    proc = subprocess.Popen(f'source {DIALS_ENV} && {SIGNAL_STRENGTH} {cbf}', shell=True, stdout=subprocess.PIPE)
+    res, err = proc.communicate()
+    print(err)
     m = re.search(r'^\s*Spot\sTotal\s*:\s*(\d+)', res.decode(), flags=re.MULTILINE)
     if m is None:
         raise Exception('Could not determine number of spots')
