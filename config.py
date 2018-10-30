@@ -10,7 +10,7 @@ class DevConfig:
 
 
 class TestConfig:
-    _PATH_DIR_PROJECT = Path('unittest_data')
+    _PATH_DIR_PROJECT = Path('data/testing')
     PATH_DIR_H5 = Path('/mnt/maxiv/common/ML-crystals/h5')
     PATH_DIR_CAM = _PATH_DIR_PROJECT / 'cam'
     PATH_DIR_CBF = _PATH_DIR_PROJECT / 'cbf'
