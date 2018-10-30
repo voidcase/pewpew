@@ -21,26 +21,35 @@ def number_frames(master: Path):
     return int(res.stdout)
 
 
-def process_master(out: Path, master: Path, n: int, m: int = None):
-    cmd = [EIGER_2_CBF, master, n]
-    out_file = None
-    if m is None:
-        out_file = f'{str(out)}/out_{n:06}.cbf'
-    else:
-        cmd[2] = f'{n}:{m}'
-        out_file = f'{str(out)}/out'
-    cmd.append(out_file)
-    cmd = list(map(str, cmd))
-    res = subprocess.run(cmd)
-    if res.returncode != 0:
-        raise Exception(f"ERROR: error code {res.returncode}")
-    if m is None:
-        return Path(out_file)
-    return [out / ('out' + str(i).zfill(6) + '.cbf') for i in range(n, m+1)]
+def process_master(out: Path, masters: list, n: int, m: int = None):
+    """ Run eiger2cbg on all files in masters. n and m is same for all files """
+    cmds = []
+    dirs = []
+    for master in masters:
+        cmd = [EIGER_2_CBF, master, n]
+        sub_dir = out / master.name[:-3]  # Remove .h5
+        dirs.append(sub_dir)
+        sub_dir.mkdir()
+        out_file = None
+        if m is None:
+            out_file = f'{sub_dir}/out_{n:06}.cbf'
+        else:
+            cmd[2] = f'{n}:{m}'
+            out_file = f'{sub_dir}/out'
+        cmd.append(out_file)
+        cmds.append(list(map(str, cmd)))
+    procs = [subprocess.Popen(cmd) for cmd in cmds]
+    for proc in procs:
+        proc.wait()
+        if proc.returncode != 0:
+            raise Exception(f"ERROR: error code {proc.returncode}")
+    return dirs
 
 
 def signal_strength(cbf: Path):
-    proc = subprocess.Popen(SIGNAL_STRENGTH + ' ' + str(cbf), shell=True, stdout=subprocess.PIPE)
+    proc = subprocess.Popen(
+        SIGNAL_STRENGTH + ' ' + str(cbf), shell=True, stdout=subprocess.PIPE
+    )
     res, _ = proc.communicate()
     m = re.search(r'^\s*Spot\sTotal\s*:\s*(\d+)', res.decode(), flags=re.MULTILINE)
     if m is None:
@@ -49,7 +58,8 @@ def signal_strength(cbf: Path):
 
 
 if __name__ == '__main__':
-    tmp = create_tmp_dir(BASE_DIR)
-    out = process_master(tmp, master, 3, 4)
-    ys = [signal_strength(f) for f in out]
-    print(ys)
+    pass
+    # tmp = create_tmp_dir(BASE_DIR)
+    # out = process_master(tmp, master, 3, 4)
+    # ys = [signal_strength(f) for f in out]
+    # print(ys)
