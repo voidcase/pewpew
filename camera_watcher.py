@@ -11,10 +11,9 @@ URL = 'http://b-v-biomax-web-0:8081' if REAL else 'http://w-v-kitslab-mxcube-1:8
 API_PATH = f'{URL}/mxcube/api/v0.1'
 
 auth = dict(
-        proposal=input('username:') if REAL else 'idtest000',
-        password=getpass(prompt='password:') if REAL else '',
-        )
-# login = dict(proposal='', password='')
+    proposal=input('username:') if REAL else 'idtest000',
+    password=getpass() if REAL else '',
+)
 
 
 def setup_session() -> requests.Session:
