@@ -45,6 +45,14 @@ def extract_ys(masterpath: Path):
     return [signal_strength(cbf) for cbf in cbf_paths]
 
 
+def save_dataset(xy: list):
+    '''xy is a list of (image id, y) tuples'''
+    conn = database()
+    query = 'INSERT INTO dataset (uuid, y) VALUES '
+    query += ','.join([f'("{uuid}", {y})' for uuid, y in xy]) + ';'
+    conn.execute(query)
+
+
 def compile_dataset():
     from os import listdir
     from diffractometrics import number_frames
@@ -61,11 +69,7 @@ def compile_dataset():
         ys = extract_ys(mpath)
         uuids = [closest_img(t) for t in timestamps]
         data += list(zip(uuids, ys))
-    # save to db
-    conn = database()
-    query = 'INSERT INTO dataset (uuid, y) VALUES '
-    query += ','.join([f'("{uuid}", {y})' for uuid, y in data]) + ';'
-    conn.execute(query)
+    save_dataset(data)
 
 
 def database():
