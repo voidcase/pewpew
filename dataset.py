@@ -10,6 +10,7 @@ cfg = config.TestConfig()
 
 def get_timestamps(master_path: Path, num_frames) -> list:
     from datetime import datetime
+
     DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
     f = h5.File(str(master_path))
     try:
@@ -28,11 +29,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
 
 
 def extract_ys(masterpath: Path, generate=False):
-    from diffractometrics import (
-            process_master,
-            signal_strength,
-            number_frames
-            )
+    from diffractometrics import process_master, signal_strength, number_frames
     cbf_dir = cfg.PATH_DIR_CBF / masterpath.name
     if cbf_dir.is_dir():
         print('found existing cbfs, using them')
@@ -41,12 +38,7 @@ def extract_ys(masterpath: Path, generate=False):
         print('found no cbfs, generating...')
         cbf_dir.mkdir()
         num_frames = number_frames(masterpath)
-        cbf_paths = process_master(
-                out=cbf_dir,
-                master=masterpath,
-                n=1,
-                m=num_frames,
-                )
+        cbf_paths = process_master(out=cbf_dir, master=masterpath, n=1, m=num_frames)
     else:
         raise RuntimeError('No cbfs found, call with generate=True to generate them as needed')
     return [signal_strength(cbf) for cbf in cbf_paths]

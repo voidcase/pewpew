@@ -1,5 +1,8 @@
 from pathlib import Path
 from uuid import uuid4
+from multiprocessing import pool
+import numpy as np
+import shutil
 import subprocess
 import re
 
@@ -22,7 +25,19 @@ def number_frames(master: Path):
     return int(res.stdout)
 
 
-def process_master(out: Path, masters: list, n: int, m: int = None):
+# Not sure if working :)
+def run(cmds):
+    with pool.Pool(processes=None) as p:
+        return_codes = p.map(subprocess.call, cmds)
+        failed_idx = np.argwhere(np.array(return_codes) > 0)
+        if len(failed_idx) > 0:
+            failed_files = [
+                cmd[1] for i, cmd in enumerate(cmds) if np.any(np.isin(failed_idx, i))
+            ]
+            raise Exception(f"ERROR: {failed_files}")
+
+
+def eiger2cbf_commands(out: Path, masters: list, n: int, m: int = None):
     """ Run eiger2cbg on all files in masters. n and m is same for all files """
     cmds = []
     dirs = []
@@ -39,20 +54,15 @@ def process_master(out: Path, masters: list, n: int, m: int = None):
             out_file = f'{sub_dir}/out'
         cmd.append(out_file)
         cmds.append(list(map(str, cmd)))
-    procs = [subprocess.Popen(cmd) for cmd in cmds]
-    for proc in procs:
-        proc.wait()
-        if proc.returncode != 0:
-            raise Exception(f"ERROR: error code {proc.returncode}")
-    return dirs
+    return cmds
 
 
 def signal_strength(cbf: Path):
     proc = subprocess.Popen(
-            f'source {DIALS_ENV} && {SIGNAL_STRENGTH} {cbf}',
-            shell=True,
-            stdout=subprocess.PIPE
-            )
+        f'source {DIALS_ENV} && {SIGNAL_STRENGTH} {cbf}',
+        shell=True,
+        stdout=subprocess.PIPE,
+    )
     res, err = proc.communicate()
     if err is not None:
         print(err)
@@ -62,9 +72,18 @@ def signal_strength(cbf: Path):
     return int(m.group(1))
 
 
-if __name__ == '__main__':
-    pass
-    # tmp = create_tmp_dir(BASE_DIR)
-    # out = process_master(tmp, master, 3, 4)
-    # ys = [signal_strength(f) for f in out]
-    # print(ys)
+# WIP
+def extract_y(clean=False):
+    tmp = create_tmp_dir(BASE_DIR)
+    masters = list((BASE_DIR / 'h5').glob('*master.h5'))[:4]
+    cmds = eiger2cbf_commands(tmp, masters, 1)
+    run(cmds)
+    cbfs = [c[3] for c in cmds]
+    if clean:
+        shutil.rmtree(tmp)
+
+    return tmp, cmds
+
+
+def clean(tmp):
+    shutil.rmtree(tmp)
