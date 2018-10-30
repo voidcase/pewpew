@@ -2,6 +2,7 @@ import requests
 from pathlib import Path
 from time import time
 from dataset import save_buffer
+from getpass import getpass
 
 # REAL = True
 REAL = False
@@ -9,7 +10,10 @@ REAL = False
 URL = 'http://b-v-biomax-web-0:8081' if REAL else 'http://w-v-kitslab-mxcube-1:8081'
 API_PATH = f'{URL}/mxcube/api/v0.1'
 
-auth = dict(proposal='idtest000', password='')
+auth = dict(
+        proposal=input('username:') if REAL else 'idtest000',
+        password=getpass(prompt='password:') if REAL else '',
+        )
 # login = dict(proposal='', password='')
 
 
@@ -72,6 +76,6 @@ if __name__ == '__main__':
             print(t)
         if t - last_save > 30:
             print('fps:{}'.format(eval_fps(camera_buffer)))
-            save_buffer(camera_buffer, str(db_path))
+            save_buffer(camera_buffer)
             camera_buffer = []
             last_save = t
