@@ -1,11 +1,8 @@
 import h5py as h5
 import sys
 import sqlite3 as sql
-import config
 from pathlib import Path
-
-
-cfg = config.TestConfig()
+import config as cfg
 
 
 def get_timestamps(master_path: Path, num_frames) -> list:
@@ -16,10 +13,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
     try:
         datestr = f[DATEPATH].value
     except KeyError:
-        print(
-            f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."',
-            file=sys.stderr,
-        )
+        print(f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."', file=sys.stderr)
         sys.exit(1)
     start_time = datetime.strptime(datestr.decode(), '%Y-%m-%dT%H:%M:%S.%f')
     exposure_time = f['entry/instrument/detector/frame_time'].value
@@ -30,6 +24,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
 
 def extract_ys(masterpath: Path, generate=False):
     from diffractometrics import process_master, signal_strength, number_frames
+
     cbf_dir = cfg.PATH_DIR_CBF / masterpath.name
     if cbf_dir.is_dir():
         print('found existing cbfs, using them')
@@ -54,16 +49,14 @@ def save_dataset(xy: list):
 
 def get_all_masters():
     from os import listdir
-    return [
-        Path(f'{cfg.PATH_DIR_H5}/{fname}')
-        for fname in listdir(cfg.PATH_DIR_H5)
-        if fname.endswith('_master.h5')
-        ]
+
+    return [Path(f'{cfg.PATH_DIR_H5}/{fname}') for fname in listdir(cfg.PATH_DIR_H5) if fname.endswith('_master.h5')]
 
 
 def compile_dataset(mpath: Path):
     '''h5 -> dataset in database, assumes cbfs are made'''
     from diffractometrics import number_frames
+
     num_frames = number_frames(mpath)
     timestamps = get_timestamps(str(mpath), num_frames)
     ys = extract_ys(mpath)
