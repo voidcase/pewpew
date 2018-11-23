@@ -1,12 +1,8 @@
 import h5py as h5
 import sys
 import sqlite3 as sql
-import config
 from pathlib import Path
 import logging as log
-
-
-cfg = config.TestConfig()
 
 
 def get_timestamps(master_path: Path, num_frames) -> list:
@@ -17,10 +13,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
     try:
         datestr = f[DATEPATH].value
     except KeyError:
-        print(
-            f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."',
-            file=sys.stderr,
-        )
+        print(f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."', file=sys.stderr)
         sys.exit(1)
     start_time = datetime.strptime(datestr.decode(), '%Y-%m-%dT%H:%M:%S.%f')
     exposure_time = f['entry/instrument/detector/frame_time'].value
@@ -31,6 +24,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
 
 def extract_ys(masterpath: Path, generate=False):
     from diffractometrics import process_master, signal_strength, number_frames
+
     cbf_dir = cfg.PATH_DIR_CBF / masterpath.name
     if cbf_dir.is_dir():
         print('found existing cbfs, using them')
@@ -77,8 +71,6 @@ def gen_all_cbf(src_dir: Path, dst_dir: Path):
         log.info('done!')
 
 
-
-
 def save_dataset(xy: list):
     '''xy is a list of (image id, y) tuples'''
     conn = database()
@@ -94,6 +86,7 @@ def get_all_masters(rootdir: Path = None):
 def compile_dataset(mpath: Path):
     '''h5 -> dataset in database, assumes cbfs are made'''
     from diffractometrics import number_frames
+
     num_frames = number_frames(mpath)
     timestamps = get_timestamps(str(mpath), num_frames)
     ys = extract_ys(mpath)

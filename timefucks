@@ -1,0 +1,49 @@
+Sample-4-11 local-user_2:
+Start write: 22:43:16.721048
+Finish write: 22:43:40.428073
+
+data_collection_date: 22:43:15.022715
+
+earliest image_ts: 22:44:53.74
+
+first image movement: 21:44:57.22
+
+last image_ts: 22:45:48.6
+
+offset = first image movement - data_collection_date = 1542663897.22 - 1542663795.022715 = 102.19728493690491
+
+Sample-1-03 local-user_2:
+data_collection_date: 1542646804.716922 = 18:00:04.716922
+first image movement: 1542646905.77 = 18:01:45.77
+
+offset = 101.05307793617249
+
+Sample-3-15 local-user_1:
+data_collection_date: 1542660203.463939
+first image movement: 1542660306.09
+
+offset = 102.626060962677
+
+Sample-2-08 local-user_1:
+data_collection_date: 1542646414.203306
+first image movement: 1542646515.36
+
+offset = 101.15669393539429
+
+Sample-3-05 local-user_1:
+data_collection_date: 1542655414.036636
+first image movement: 1542655515.79
+
+offset = 101.75336384773254
+
+Sample-3-07 local-user_1: 
+data_collection_date: 1542656751.837121
+first image movement: 1542656853.32
+
+offset = 101.48287892341614
+
+Sample-3-08 local-user_2:
+data_collection_date: 1542657334.787412
+first image movement: 1542657436.59
+
+offset = 101.80258798599243
