@@ -1,0 +1,34 @@
+.
+.
+.
+
+Converting frame 100 (100 / 100)
+ /entry/sample/goniometer/omega[100] = 169.900 (1-indexed)
+Converting frame 100 (100 / 100)
+ /entry/sample/goniometer/omega[100] = 54.900 (1-indexed)
+
+All done!
+
+All done!
+---------------------------------------------------------------------------
+Exception                                 Traceback (most recent call last)
+~/repos/pewpew/cbfgen.py in <module>()
+      9 gen_all_cbf(
+     10         src_dir=Path('/mnt/maxiv-visitors/biomax/20180479/20181119/raw'),
+---> 11         dst_dir=Path('/mnt/maxiv-staff/common/ML-crystals/real_cbf'))
+
+~/repos/pewpew/dataset.py in gen_all_cbf(src_dir, dst_dir)
+     74                 ))
+     75         log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
+---> 76         run(cmds)
+     77         log.info('done!')
+     78 
+
+~/repos/pewpew/diffractometrics.py in run(cmds)
+     35                 cmd[1] for i, cmd in enumerate(cmds) if np.any(np.isin(failed_idx, i))
+     36             ]
+---> 37             raise Exception(f"ERROR: {failed_files}")
+     38 
+     39 
+
+Exception: ERROR: ['/mnt/maxiv-visitors/biomax/20180479/20181119/raw/Sample-3-02/local-user_2_master.h5', '/mnt/maxiv-visitors/biomax/20180479/20181119/raw/Sample-3-02/local-user_1_master.h5']
