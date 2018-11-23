@@ -37,24 +37,19 @@ def run(cmds):
             raise Exception(f"ERROR: {failed_files}")
 
 
-def eiger2cbf_commands(out: Path, masters: list, n: int, m: int = None):
+def eiger2cbf_command(out: Path, master: Path, n: int, m: int = None):
     """ Run eiger2cbg on all files in masters. n and m is same for all files """
-    cmds = []
-    dirs = []
-    for master in masters:
-        cmd = [EIGER_2_CBF, master, n]
-        sub_dir = out / master.name[:-3]  # Remove .h5
-        dirs.append(sub_dir)
-        sub_dir.mkdir()
-        out_file = None
-        if m is None:
-            out_file = f'{sub_dir}/out_{n:06}.cbf'
-        else:
-            cmd[2] = f'{n}:{m}'
-            out_file = f'{sub_dir}/out'
-        cmd.append(out_file)
-        cmds.append(list(map(str, cmd)))
-    return cmds
+    cmd = [EIGER_2_CBF, master, n]
+    sub_dir = out / master.name[:-3]  # Remove .h5
+    sub_dir.mkdir()
+    out_file = None
+    if m is None:
+        out_file = f'{sub_dir}/out_{n:06}.cbf'
+    else:
+        cmd[2] = f'{n}:{m}'
+        out_file = f'{sub_dir}/out'
+    cmd.append(out_file)
+    return list(map(str, cmd))
 
 
 def signal_strength(cbf: Path):

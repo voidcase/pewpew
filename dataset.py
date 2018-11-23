@@ -3,6 +3,7 @@ import sys
 import sqlite3 as sql
 import config
 from pathlib import Path
+import logging as log
 
 
 cfg = config.TestConfig()
@@ -44,6 +45,40 @@ def extract_ys(masterpath: Path, generate=False):
     return [signal_strength(cbf) for cbf in cbf_paths]
 
 
+def gen_all_cbf(src_dir: Path, dst_dir: Path):
+    from diffractometrics import run, eiger2cbf_command, number_frames
+    log.info('generating cfb, this will be mega slow, so buckle up mofo.')
+    for sample_dir in src_dir.glob('Sample-*-*'):
+        log.info(f'processing {sample_dir}')
+        master_paths = list(get_all_masters(sample_dir))
+        cmds = []
+        for master in master_paths:
+            cbf_dir = dst_dir / (sample_dir.stem) / master.stem
+            if not cbf_dir.is_dir():
+                log.debug(f'making cbf dir for {sample_dir}')
+                cbf_dir.mkdir(parents=True)
+            num_frames = number_frames(master)
+            if num_frames != 100:
+                log.warning(f'abnormal number of frames: {num_frames}')
+            num_done_frames = len(list(cbf_dir.iterdir()))
+            if num_done_frames == num_frames:
+                log.info(f'all cbfs already generated. continuing.')
+                continue
+            elif num_done_frames > 0:
+                log.info(f'found {num_done_frames} already existing cbfs.')
+            cmds.append(eiger2cbf_command(
+                out=cbf_dir,
+                master=master,
+                n=1+num_done_frames,
+                m=num_frames,
+                ))
+        log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
+        run(cmds)
+        log.info('done!')
+
+
+
+
 def save_dataset(xy: list):
     '''xy is a list of (image id, y) tuples'''
     conn = database()
@@ -52,13 +87,8 @@ def save_dataset(xy: list):
     conn.execute(query)
 
 
-def get_all_masters():
-    from os import listdir
-    return [
-        Path(f'{cfg.PATH_DIR_H5}/{fname}')
-        for fname in listdir(cfg.PATH_DIR_H5)
-        if fname.endswith('_master.h5')
-        ]
+def get_all_masters(rootdir: Path = None):
+    return (rootdir or Path).rglob('*_master.h5')
 
 
 def compile_dataset(mpath: Path):
