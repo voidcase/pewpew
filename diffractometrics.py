@@ -100,9 +100,10 @@ def run(cmds):
 
 def eiger2cbf_command(out: Path, master: Path, n: int, m: int = None):
     """ Run eiger2cbg on all files in masters. n and m is same for all files """
-    cmd = [EIGER_2_CBF, master, n]
+    cmd = [cfg.EIGER_2_CBF, master, n]
     sub_dir = out / master.name[:-3]  # Remove .h5
-    sub_dir.mkdir()
+    if not sub_dir.is_dir():
+        sub_dir.mkdir()
     out_file = None
     if m is None:
         out_file = f'{sub_dir}/out_{n:06}.cbf'

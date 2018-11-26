@@ -47,7 +47,7 @@ def gen_all_cbf(src_dir: Path, dst_dir: Path):
         master_paths = list(get_all_masters(sample_dir))
         cmds = []
         for master in master_paths:
-            cbf_dir = dst_dir / (sample_dir.stem) / master.stem
+            cbf_dir = dst_dir / (sample_dir.stem)
             if not cbf_dir.is_dir():
                 log.debug(f'making cbf dir for {sample_dir}')
                 cbf_dir.mkdir(parents=True)
@@ -67,8 +67,12 @@ def gen_all_cbf(src_dir: Path, dst_dir: Path):
                 m=num_frames,
                 ))
         log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
-        run(cmds)
+        try:
+            run(cmds)
+        except Exception as e:
+            log.error(f'commands failed: {e.args[0]}')
         log.info('done!')
+    log.info('all done!')
 
 
 def save_dataset(xy: list):
