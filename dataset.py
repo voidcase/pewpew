@@ -39,39 +39,55 @@ def extract_ys(masterpath: Path, generate=False):
     return [signal_strength(cbf) for cbf in cbf_paths]
 
 
-def gen_all_cbf(src_dir: Path, dst_dir: Path):
+def gen_cbf(sample_dir, dst_dir):
     from diffractometrics import run, eiger2cbf_command, number_frames
+    log.info(f'processing {sample_dir}')
+    master_paths = list(get_all_masters(sample_dir))  # file access
+    cmds = []
+    for master in master_paths:
+        cbf_dir = dst_dir / (sample_dir.stem)
+        if not cbf_dir.is_dir():
+            log.debug(f'making cbf dir for {sample_dir}')
+            cbf_dir.mkdir(parents=True)
+        num_frames = number_frames(master)  # file access
+        if num_frames != 100:
+            log.warning(f'abnormal number of frames: {num_frames}')
+        master_dst = cbf_dir / master.stem
+        num_done_frames = len(list(master_dst.iterdir())) if master_dst.exists() else 0
+        if num_done_frames == num_frames:
+            log.info(f'all cbfs already generated. continuing.')
+            continue
+        elif num_done_frames > 0:
+            log.info(f'found {num_done_frames} already existing cbfs.')
+        cmds.append(eiger2cbf_command(
+            out=cbf_dir,
+            master=master,
+            n=1+num_done_frames,
+            m=num_frames,
+            ))
+    log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
+    try:
+        run(cmds)  # file access
+    except Exception as e:
+        log.error(f'commands failed: {e.args[0]}')
+    log.info('done!')
+
+
+def gen_all_cbf(src_dir: Path, dst_dir: Path):
+    from time import sleep
     log.info('generating cfb, this will be mega slow, so buckle up mofo.')
     for sample_dir in src_dir.glob('Sample-*-*'):
-        log.info(f'processing {sample_dir}')
-        master_paths = list(get_all_masters(sample_dir))
-        cmds = []
-        for master in master_paths:
-            cbf_dir = dst_dir / (sample_dir.stem)
-            if not cbf_dir.is_dir():
-                log.debug(f'making cbf dir for {sample_dir}')
-                cbf_dir.mkdir(parents=True)
-            num_frames = number_frames(master)
-            if num_frames != 100:
-                log.warning(f'abnormal number of frames: {num_frames}')
-            num_done_frames = len(list(cbf_dir.iterdir()))
-            if num_done_frames == num_frames:
-                log.info(f'all cbfs already generated. continuing.')
-                continue
-            elif num_done_frames > 0:
-                log.info(f'found {num_done_frames} already existing cbfs.')
-            cmds.append(eiger2cbf_command(
-                out=cbf_dir,
-                master=master,
-                n=1+num_done_frames,
-                m=num_frames,
-                ))
-        log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
-        try:
-            run(cmds)
-        except Exception as e:
-            log.error(f'commands failed: {e.args[0]}')
-        log.info('done!')
+        done = False
+        while not done:
+            try:
+                gen_cbf(sample_dir, dst_dir)
+                done = True
+            except OSError:
+                pause = 60  # seconds
+                log.error(f'temporarily lost connection to samba, sleeping for {pause} seconds...')
+                sleep(pause)
+                log.info('yawn! waking up')
+
     log.info('all done!')
 
 
