@@ -53,7 +53,12 @@ def gen_cbf(sample_dir, dst_dir):
         if num_frames != 100:
             log.warning(f'abnormal number of frames: {num_frames}')
         master_dst = cbf_dir / master.stem
-        num_done_frames = len(list(master_dst.iterdir())) if master_dst.exists() else 0
+
+        # how many frames are already generated?
+        num_done_frames = 0
+        if master_dst.exists():
+            num_done_frames = len(list(master_dst.iterdir()))
+
         if num_done_frames == num_frames:
             log.info(f'all cbfs already generated. continuing.')
             continue
@@ -89,6 +94,25 @@ def gen_all_cbf(src_dir: Path, dst_dir: Path):
                 log.info('yawn! waking up')
 
     log.info('all done!')
+
+
+def gen_all_data_pairs(src_dir: Path):
+    import json
+    from diffractometrics import QueueEntry
+    meta_files = src_dir.rglob('*.meta.txt')
+    for meta_file in meta_files:
+        meta = json.load(open(meta_file.absolute(), 'r'))
+        qe = QueueEntry(meta, meta['fileinfo']['directory'])
+        if qe.master_file.exists():
+            qe.write_data_pairs()
+            log.info(f'pairs of {qe.sample_dir.name} written')
+        else:
+            log.error(f'missing h5 file: {qe.master_file}')
+
+
+
+
+
 
 
 def save_dataset(xy: list):

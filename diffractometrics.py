@@ -13,10 +13,11 @@ import config as cfg
 
 class QueueEntry:
     SNAPSHOT_DIR = "timed_snapshots"
-    TIME_OFFSET = 101.724_564_075_469_97
+    DEFAULT_TIME_OFFSET = 101.724_564_075_469_97
 
-    def __init__(self, meta, sample_dir):
+    def __init__(self, meta, sample_dir, offset=DEFAULT_TIME_OFFSET):
         self.meta = meta
+        self.offset = offset
         self.sample_dir = Path(sample_dir)
         self.master_file = Path(meta["fileinfo"]["filename"])
         self.nbr_images = meta["oscillation_sequence"][0]["number_of_images"]
@@ -54,7 +55,7 @@ class QueueEntry:
                         float(candidates[i + 1].stem[len(self.prefix) + 1 :]),
                     ]
                 )
-                - self.TIME_OFFSET
+                - self.offset
             )
 
             # Skip images taken before collection
