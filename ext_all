@@ -3,15 +3,23 @@
 #SBATCH -J job_name
 #SBATCH -o SLURM.log
 #SBATCH -e ERROR.err
+#SBATCH -t 10:00:00
+#SBATCH --mail-user=isak.e.lindhe@gmail.com
+#SBATCH --mail-type=ALL
 
 date
 # CBF_ROOT=/data/staff/common/ML-crystals/real_cbf
 CBF_ROOT=/mnt/staff/common/ML-crystals/real_cbf
+OUT=out
+
+
+mkdir $OUT
 
 for sample in $CBF_ROOT/*; do
 	for scan in $sample/*; do
 		for cbf in $scan/*; do
-			COUNT=$(distl.signal_strength "$cbf" | grep "Spot Total" | awk '{print $4}') && echo "$cbf,$COUNT"
+			FNAME=$(echo $cbf | sed 's/\//__/g' | sed 's/.cbf$//')
+			distl.signal_strength "$cbf" > "$OUT/$FNAME"
 		done
 	done
 done
