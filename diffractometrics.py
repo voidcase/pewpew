@@ -116,33 +116,3 @@ def eiger2cbf_command(out: Path, master: Path, n: int, m: int = None):
         out_file = f'{sub_dir}/out'
     cmd.append(out_file)
     return list(map(str, cmd))
-
-
-def signal_strength(cbf: Path):
-    proc = subprocess.Popen(
-        f"source {cfg.DIALS_ENV} && {cfg.SIGNAL_STRENGTH} {cbf}", shell=True, stdout=subprocess.PIPE
-    )
-    res, err = proc.communicate()
-    if err is not None:
-        print(err)
-    m = re.search(r"^\s*Spot\sTotal\s*:\s*(\d+)", res.decode(), flags=re.MULTILINE)
-    if m is None:
-        raise Exception("Could not determine number of spots")
-    return int(m.group(1))
-
-
-# WIP
-def extract_y(clean=False):
-    tmp = utils.create_tmp_dir(cfg.BASE_DIR)
-    masters = list((cfg.BASE_DIR / "h5").glob("*master.h5"))[:4]
-    cmds = eiger2cbf_commands(tmp, masters, 1)
-    run(cmds)
-    cbfs = [c[3] for c in cmds]
-    if clean:
-        shutil.rmtree(tmp)
-
-    return tmp, cmds
-
-
-def clean(tmp):
-    shutil.rmtree(tmp)
