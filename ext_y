@@ -1,0 +1,12 @@
+#!/usr/bin/bash
+
+#SBATCH -J job_name
+#SBATCH -o SLURM.log
+#SBATCH -e ERROR.err
+
+date
+for cbf in /data/staff/common/ML-crystals/real_cbf/Sample-3-01/local-user_1_master/*; do
+	distl.signal_strength "$cbf" | grep "Spot Total"
+done
+date
+
