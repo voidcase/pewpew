@@ -1,12 +1,9 @@
 from pathlib import Path
 from multiprocessing import pool
 import numpy as np
-import shutil
 import subprocess
-import re
 import json
 
-import utils
 import dataset
 import config as cfg
 
@@ -36,10 +33,7 @@ class QueueEntry:
     def __find_closest_images(self, THRESHOLD=0.5):
         data_pairs = {}
         timestamps = dataset.get_timestamps(self.__local_master_file(), self.nbr_images)
-        candidates = sorted(
-            (self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"),
-            key=lambda p: p.name
-            )
+        candidates = sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)
 
         ts_i = 0
         i = 0
