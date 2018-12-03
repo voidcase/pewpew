@@ -101,3 +101,14 @@ def compile_dataset(mpath: Path):
     ys = extract_ys(mpath)
     uuids = [closest_img(t) for t in timestamps]
     save_dataset(list(zip(uuids, ys)))
+
+
+def parse_sigstr(fp: Path):
+    import re
+    with open(str(fp)) as f:
+        return int(re.search(r'Spot Total :\s*(\d)', f.read()).group(1))
+
+def test_parse_sigstr():
+    path = Path('/mnt/staff/common/ML-crystals/sig_str_out/__data__staff__common__ML-crystals__real_cbf__Sample-4-16__local-user_2_master__out000069')
+    res = parse_sigstr(path)
+    assert res == 0
