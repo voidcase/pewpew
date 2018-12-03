@@ -25,8 +25,9 @@ class QueueEntry:
 
     def write_data_pairs(self):
         if not len(self.pairs):
-            self.__find_closest_images()
-        name = f"{self.sample_dir.name}_{self.prefix}"
+            thres = 0.5
+            self.__find_closest_images(thres)
+        name = f"{self.sample_dir.name}_{self.prefix}_{thres}.json"
         with open(cfg.DATA_DIR / name, "w") as f:
             json.dump(self.pairs, f, indent=4)
 
