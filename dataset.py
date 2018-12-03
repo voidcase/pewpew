@@ -2,6 +2,9 @@ import h5py as h5
 import sys
 from pathlib import Path
 import logging as log
+import config as cfg
+import json
+import re
 
 
 def get_timestamps(master_path: Path, num_frames) -> list:
@@ -23,6 +26,7 @@ def get_timestamps(master_path: Path, num_frames) -> list:
 
 def gen_cbf(sample_dir, dst_dir):
     from diffractometrics import run, eiger2cbf_command, number_frames
+
     log.info(f'processing {sample_dir}')
     master_paths = list((rootdir or Path).rglob('*_master.h5'))  # file access
     cmds = []
@@ -46,12 +50,7 @@ def gen_cbf(sample_dir, dst_dir):
             continue
         elif num_done_frames > 0:
             log.info(f'found {num_done_frames} already existing cbfs.')
-        cmds.append(eiger2cbf_command(
-            out=cbf_dir,
-            master=master,
-            n=1+num_done_frames,
-            m=num_frames,
-            ))
+        cmds.append(eiger2cbf_command(out=cbf_dir, master=master, n=1 + num_done_frames, m=num_frames))
     log.info(f'running {len(cmds)}/{len(master_paths)} commands...')
     try:
         run(cmds)  # file access
@@ -62,6 +61,7 @@ def gen_cbf(sample_dir, dst_dir):
 
 def gen_all_cbf(src_dir: Path, dst_dir: Path):
     from time import sleep
+
     log.info('generating cfb, this will be mega slow, so buckle up mofo.')
     for sample_dir in src_dir.glob('Sample-*-*'):
         done = False
@@ -81,6 +81,7 @@ def gen_all_cbf(src_dir: Path, dst_dir: Path):
 def gen_all_data_pairs(src_dir: Path):
     import json
     from diffractometrics import QueueEntry
+
     meta_files = src_dir.rglob('*.meta.txt')
     for meta_file in meta_files:
         meta = json.load(open(meta_file.absolute(), 'r'))
@@ -92,23 +93,50 @@ def gen_all_data_pairs(src_dir: Path):
             log.error(f'missing h5 file: {qe.master_file}')
 
 
-def compile_dataset(mpath: Path):
-    '''h5 -> dataset in database, assumes cbfs are made'''
-    from diffractometrics import number_frames
+def compile_dataset():
+    import csv
 
-    num_frames = number_frames(mpath)
-    timestamps = get_timestamps(str(mpath), num_frames)
-    ys = extract_ys(mpath)
-    uuids = [closest_img(t) for t in timestamps]
-    save_dataset(list(zip(uuids, ys)))
+    rows = []
+    for json_path in cfg.DATA_DIR.iterdir():
+        json_file = json_path.name
+        print(json_file)
+        split_idx = json_file.find('_')
+        sample, local_user = json_file[:split_idx], json_file[split_idx + 1 :]
+        snapshot_dir = cfg.PROPOSAL_DIR / sample / 'timed_snapshots'
+        with open(json_path, 'r') as f:
+            pairs = json.load(f)
+        for img, frame_nbr in pairs.items():
+            dials_out = (
+                cfg.PATH_DIR_PROJECT
+                / 'sig_str_out'
+                / '__data__staff__common__ML-crystals__real_cbf__{sample}__{local_user}_master__out{frame_nbr}'.format(
+                    sample=sample, local_user=local_user, frame_nbr=str(frame_nbr).zfill(6)
+                )
+            )
+            y = parse_sigstr(dials_out)
+            if y is not None:
+                rows.append([str(snapshot_dir / img), y])
+    with open(cfg.PATH_DIR_PROJECT / 'csv' / 'data.csv', 'w', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(['filename', 'y'])
+        writer.writerows(rows)
 
 
 def parse_sigstr(fp: Path):
-    import re
-    with open(str(fp)) as f:
-        return int(re.search(r'Spot Total :\s*(\d)', f.read()).group(1))
+    if not fp.exists():
+        return None
+
+    with open(fp) as f:
+        match = re.search(r'Spot Total :\s*(\d+)', f.read())
+        if not match:
+            return None
+        return int(match.group(1))
+
 
 def test_parse_sigstr():
-    path = Path('/mnt/staff/common/ML-crystals/sig_str_out/__data__staff__common__ML-crystals__real_cbf__Sample-4-16__local-user_2_master__out000069')
+    path = (
+        cfg.PATH_DIR_PROJECT
+        / 'sig_str_out/__data__staff__common__ML-crystals__real_cbf__Sample-4-16__local-user_2_master__out000069'
+    )
     res = parse_sigstr(path)
     assert res == 0
