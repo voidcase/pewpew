@@ -108,6 +108,7 @@ def parse_sigstr(fp: Path):
     with open(str(fp)) as f:
         return int(re.search(r'Spot Total :\s*(\d)', f.read()).group(1))
 
+
 def test_parse_sigstr():
     path = Path('/mnt/staff/common/ML-crystals/sig_str_out/__data__staff__common__ML-crystals__real_cbf__Sample-4-16__local-user_2_master__out000069')
     res = parse_sigstr(path)
