@@ -1,5 +1,7 @@
 import cv2
+import re
 import numpy as np
+import pandas as pd
 from skimage.transform import resize
 from tensorflow import keras
 from tensorflow.nn import relu
@@ -12,7 +14,7 @@ def build_model():
     md.add(keras.layers.Flatten())
     md.add(keras.layers.Dense(32, activation=relu))
     md.add(keras.layers.Dense(1, activation=relu))
-    md.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
+    md.compile(optimizer='adam', loss='mean_squared_error')
     return md
 
 
@@ -23,28 +25,26 @@ def load_data(path):
     return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
 
 
+def get_dataset_df(csv_path: Path):
+    df = pd.read_csv(str(csv_path))
+    df['sample'] = df['filename'].map(
+        lambda x: re.search('Sample-([0-9]+-[0-9]+)', x).group(1)
+        )
+    df['scan'] = df['filename'].map(
+        lambda x: re.search('local-user_([0-9]+)_', x).group(1)
+        )
+    return df
 
-def load_data_2(csv_stream, max_rows=256):
-    '''
-    no headers plz
-    first column: image path
-    second column: y value
-    '''
-    import csv
-    images = []
-    y = []
-    reader = csv.reader(csv_stream)
-    for row in reader:
-        if not Path(row[0]).exists():
-            print(f'no path: "{row[0]}"')
-            continue
-        images.append(prep_img(cv2.imread(row[0], cv2.IMREAD_COLOR)))  # loads in grayscale
-        # y.append(np.array([row[1]]))
-        y.append(row[1])
-        if reader.line_num >= max_rows:
-            break
+
+
+def load_data_2(df: pd.DataFrame):
+    images = [
+        prep_img(cv2.imread(fname, cv2.IMREAD_COLOR))
+        for fname in df['filename']
+        if Path(fname).exists()
+    ]
+    y = np.array(df['y'])
     x = np.stack(images)
-    y = np.array(y)
     return x, y
 
 
@@ -108,9 +108,12 @@ if __name__ == '__main__':
     # md = stupid_model(x)
     # pts, yp = create_heatmap(raw[0], md, (10, 10), (30, 30), 3)
     # draw_heatmap(x[0], pts, yp)
-    datafile = open('/mnt/staff/common/ML-crystals/csv/data_0.5.json.csv','r')
     md = build_model()
+    df = get_dataset_df(Path('/mnt/staff/common/ML-crystals/csv/data_0.5.csv'))
+    train_df = df[df['sample'] != '3-12'].sample(frac=1).reset_index(drop=True)
+    test_df  = df[df['sample'] == '3-12']
+    val_x, val_y = load_data_2(test_df)
     for i in range(5):
-        x, y = load_data_2(datafile, max_rows=500)
-        md.fit(x,y)
+        x, y = load_data_2(train_df[i*300:(i+1)*300])
+        md.fit(x, y, validation_data=(val_x, val_y))
     print('ta-daaa')
