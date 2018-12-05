@@ -1,3 +1,6 @@
+offset = first image movement - data_collection_date
+offset2 = first image movement - start write (filewriter)
+
 Sample-4-11 local-user_2:
 Start write: 22:43:16.721048
 Finish write: 22:43:40.428073
@@ -11,39 +14,52 @@ first image movement: 21:44:57.22
 last image_ts: 22:45:48.6
 
 offset = first image movement - data_collection_date = 1542663897.22 - 1542663795.022715 = 102.19728493690491
+offset2 = first image movement - start write = 1542663897.22 - 1542663796.721048 = 100.49895191192627
 
 Sample-1-03 local-user_2:
 data_collection_date: 1542646804.716922 = 18:00:04.716922
 first image movement: 1542646905.77 = 18:01:45.77
+start write = 2018-11-19 18:00:06.442456
 
 offset = 101.05307793617249
+offset2 = 99.32754397392273
 
 Sample-3-15 local-user_1:
 data_collection_date: 1542660203.463939
 first image movement: 1542660306.09
+start write = 1542660205.211834
 
 offset = 102.626060962677
+offset2 = 100.87816596031189
 
 Sample-2-08 local-user_1:
 data_collection_date: 1542646414.203306
 first image movement: 1542646515.36
+start write = 1542646415.921261
 
 offset = 101.15669393539429
+offset2 = 99.43873882293701
 
 Sample-3-05 local-user_1:
 data_collection_date: 1542655414.036636
 first image movement: 1542655515.79
+start write = 1542655415.784715
 
 offset = 101.75336384773254
+offset2 = 100.00528502464294
 
 Sample-3-07 local-user_1: 
 data_collection_date: 1542656751.837121
 first image movement: 1542656853.32
+start write = 1542656753.57949
 
 offset = 101.48287892341614
+offset2 = 99.74050998687744
 
 Sample-3-08 local-user_2:
 data_collection_date: 1542657334.787412
 first image movement: 1542657436.59
+start write = 1542657336.529376
 
 offset = 101.80258798599243
+offset2 = 100.06062388420105

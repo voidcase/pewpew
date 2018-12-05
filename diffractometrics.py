@@ -10,7 +10,7 @@ import config as cfg
 
 class QueueEntry:
     SNAPSHOT_DIR = "timed_snapshots"
-    DEFAULT_TIME_OFFSET = 101.724_564_075_469_97
+    DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
 
     def __init__(self, meta, sample_dir, offset=DEFAULT_TIME_OFFSET):
         self.meta = meta
