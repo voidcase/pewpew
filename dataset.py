@@ -100,8 +100,8 @@ def compile_dataset():
     for json_path in cfg.DATA_DIR.iterdir():
         json_file = json_path.name
         print(json_file)
-        split_idx = json_file.find('_')
-        sample, local_user = json_file[:split_idx], json_file[split_idx + 1 :]
+        split = json_file.split('_')
+        sample, local_user, threshold = split[0], '_'.join(split[1:3]), split[3]
         snapshot_dir = cfg.PROPOSAL_DIR / sample / 'timed_snapshots'
         with open(json_path, 'r') as f:
             pairs = json.load(f)
@@ -116,7 +116,8 @@ def compile_dataset():
             y = parse_sigstr(dials_out)
             if y is not None:
                 rows.append([str(snapshot_dir / img), y])
-    with open(cfg.PATH_DIR_PROJECT / 'csv' / 'data.csv', 'w', newline='') as f:
+
+    with open(cfg.PATH_DIR_PROJECT / 'csv' / f'data_{threshold}.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['filename', 'y'])
         writer.writerows(rows)
