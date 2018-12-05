@@ -134,6 +134,7 @@ def parse_sigstr(fp: Path):
         return int(match.group(1))
 
 
+
 def test_parse_sigstr():
     path = (
         cfg.PATH_DIR_PROJECT
