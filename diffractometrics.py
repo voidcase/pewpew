@@ -6,11 +6,12 @@ import json
 
 import dataset
 import config as cfg
+import logging as log
 
 
 class QueueEntry:
     SNAPSHOT_DIR = "timed_snapshots"
-    DEFAULT_TIME_OFFSET = 101.724_564_075_469_97
+    DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
 
     def __init__(self, meta, sample_dir, offset=DEFAULT_TIME_OFFSET):
         self.meta = meta
@@ -32,6 +33,7 @@ class QueueEntry:
             json.dump(self.pairs, f, indent=4)
 
     def __find_closest_images(self, THRESHOLD=0.5):
+        log.info(f'matching pairs for {self.master_file}')
         data_pairs = {}
         timestamps = dataset.get_timestamps(self.__local_master_file(), self.nbr_images)
         candidates = sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)

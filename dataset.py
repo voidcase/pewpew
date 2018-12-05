@@ -101,7 +101,7 @@ def compile_dataset():
         json_file = json_path.name
         print(json_file)
         split = json_file.split('_')
-        sample, local_user, threshold = split[0], '_'.join(split[1:3]), split[3]
+        sample, local_user, threshold = split[0], '_'.join(split[1:3]), split[3][:-5]
         snapshot_dir = cfg.PROPOSAL_DIR / sample / 'timed_snapshots'
         with open(json_path, 'r') as f:
             pairs = json.load(f)
