@@ -64,12 +64,14 @@ def center_of(img):
     return tuple(img.shape[a] // 2 for a in [1, 0])
 
 
-def prep_img(img, center_on=None):
+def prep_img(img, center_on=None, crop_radius=None):
     # TODO cropping
     if not center_on:
         center_on = center_of(img)
     cx, cy = center_on
     imrad = min(cx, cy, img.shape[0] - cy, img.shape[1] - cx)
+    if crop_radius and crop_radius < imrad:
+        imrad = crop_radius
     img = img[cy - imrad : cy + imrad, cx - imrad : cx + imrad]
     return resize(img, (128, 128))
 
