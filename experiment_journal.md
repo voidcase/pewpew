@@ -64,3 +64,5 @@ Epoch 1/1
 Train on 300 samples, validate on 168 samples
 Epoch 1/1
 300/300 [==============================] - 13s 42ms/step - loss: 14045.5806 - val_loss: 1414.7136
+## notes
+3-12 is probably not a good sample to validate on

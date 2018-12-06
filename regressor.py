@@ -110,10 +110,10 @@ if __name__ == '__main__':
     # draw_heatmap(x[0], pts, yp)
     md = build_model()
     df = get_dataset_df(Path('/mnt/staff/common/ML-crystals/csv/data_0.5.csv'))
-    train_df = df[df['sample'] != '3-12'].sample(frac=1).reset_index(drop=True)
-    test_df  = df[df['sample'] == '3-12']
+    train_df = df[df['sample'] != '3-09']
+    test_df  = df[df['sample'] == '3-09']
     val_x, val_y = load_data_2(test_df)
     for i in range(5):
         x, y = load_data_2(train_df[i*300:(i+1)*300])
-        md.fit(x, y, validation_data=(val_x, val_y))
+        md.fit(x, y, validation_data=(val_x, val_y), shuffle=True)
     print('ta-daaa')
