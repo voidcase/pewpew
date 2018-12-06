@@ -1,5 +1,7 @@
 import cv2
+import re
 import numpy as np
+import pandas as pd
 from skimage.transform import resize
 from tensorflow import keras
 from tensorflow.nn import relu
@@ -13,7 +15,7 @@ def build_model():
     md.add(keras.layers.Flatten())
     md.add(keras.layers.Dense(32, activation=relu))
     md.add(keras.layers.Dense(1, activation=relu))
-    md.compile(optimizer='adam', loss='mean_squared_error', metrics=['mse'])
+    md.compile(optimizer='adam', loss='mean_squared_error')
     return md
 
 
@@ -24,6 +26,7 @@ def load_data(path):
     return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
 
 
+<<<<<<< HEAD
 def load_data_2(csv_stream, max_rows=256):
     '''
     no headers plz
@@ -44,8 +47,28 @@ def load_data_2(csv_stream, max_rows=256):
         y.append(row[1])
         if reader.line_num >= max_rows:
             break
+=======
+def get_dataset_df(csv_path: Path):
+    df = pd.read_csv(str(csv_path))
+    df['sample'] = df['filename'].map(
+        lambda x: re.search('Sample-([0-9]+-[0-9]+)', x).group(1)
+        )
+    df['scan'] = df['filename'].map(
+        lambda x: re.search('local-user_([0-9]+)_', x).group(1)
+        )
+    return df
+
+
+
+def load_data_2(df: pd.DataFrame):
+    images = [
+        prep_img(cv2.imread(fname, cv2.IMREAD_COLOR))
+        for fname in df['filename']
+        if Path(fname).exists()
+    ]
+    y = np.array(df['y'])
+>>>>>>> fdf888aa790c7efe713456bcc557bf0df6075b73
     x = np.stack(images)
-    y = np.array(y)
     return x, y
 
 
@@ -105,9 +128,11 @@ if __name__ == '__main__':
     # md = stupid_model(x)
     # pts, yp = create_heatmap(raw[0], md, (10, 10), (30, 30), 3)
     # draw_heatmap(x[0], pts, yp)
-    datafile = open('/data/staff/common/ML-crystals/csv/data_0.5.json.csv', 'r')
     md = build_model()
+    df = get_dataset_df(Path('/mnt/staff/common/ML-crystals/csv/data_0.5.csv'))
+    train_df = df[df['sample'] != '3-09']
+    test_df  = df[df['sample'] == '3-09']
+    val_x, val_y = load_data_2(test_df)
     for i in range(5):
         x, y = load_data_2(datafile, max_rows=500)
         md.fit(x, y)
-    print('ta-daaa')
