@@ -108,9 +108,9 @@ if __name__ == '__main__':
     # md = stupid_model(x)
     # pts, yp = create_heatmap(raw[0], md, (10, 10), (30, 30), 3)
     # draw_heatmap(x[0], pts, yp)
-    datafile = open('/mnt/staff/common/ML-crystals/csv/data_0.5.json.csv','r')
+    datafile = open('/data/staff/common/ML-crystals/csv/data_0.5.json.csv', 'r')
     md = build_model()
     for i in range(5):
         x, y = load_data_2(datafile, max_rows=500)
-        md.fit(x,y)
+        md.fit(x, y)
     print('ta-daaa')
