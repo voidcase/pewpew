@@ -23,7 +23,7 @@ def get_timestamps_log(entry: QueueEntry):
             if match is not None:
                 matches.append(fmt(match.group(1)))
     if len(matches) != 2:
-        raise Exception('Could not find start and/or finish time for {master_path}')
+        raise Exception(f'Could not find start and/or finish time for {entry.master_file}')
 
     duration = entry.nbr_frames * entry.exposure_time
     diff = matches[1] - matches[0]
