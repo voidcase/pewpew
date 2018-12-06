@@ -5,6 +5,7 @@ from tensorflow import keras
 from tensorflow.nn import relu
 from pathlib import Path
 
+
 def build_model():
     md = keras.models.Sequential()
     md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
@@ -23,7 +24,6 @@ def load_data(path):
     return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
 
 
-
 def load_data_2(csv_stream, max_rows=256):
     '''
     no headers plz
@@ -31,6 +31,7 @@ def load_data_2(csv_stream, max_rows=256):
     second column: y value
     '''
     import csv
+
     images = []
     y = []
     reader = csv.reader(csv_stream)
@@ -65,11 +66,7 @@ def grid(origin, distance, shape):
     '''
     origin: (x, y)
     '''
-    return [
-        (origin[0] + distance * i, origin[1] + distance * j)
-        for i in range(shape[0])
-        for j in range(shape[1])
-    ]
+    return [(origin[0] + distance * i, origin[1] + distance * j) for i in range(shape[0]) for j in range(shape[1])]
 
 
 def center_of(img):

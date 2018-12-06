@@ -10,7 +10,6 @@ import logging as log
 
 
 class QueueEntry:
-    SNAPSHOT_DIR = "timed_snapshots"
     DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
 
     def __init__(self, meta, sample_dir, offset=DEFAULT_TIME_OFFSET):
@@ -22,15 +21,13 @@ class QueueEntry:
         self.zoom = meta.get("zoom1", None)
         self.frontlight = meta.get("backlight", None)
         self.prefix = f"{meta['fileinfo']['prefix']}_{meta['fileinfo']['run_number']}"
-        self.pairs = {}
 
     def write_data_pairs(self):
-        if not len(self.pairs):
-            thres = 0.5
-            self.__find_closest_images(thres)
+        thres = 0.5
+        pairs = self.__find_closest_images(thres)
         name = f"{self.sample_dir.name}_{self.prefix}_{thres}.json"
         with open(cfg.DATA_DIR / name, "w") as f:
-            json.dump(self.pairs, f, indent=4)
+            json.dump(pairs, f, indent=4)
 
     def __find_closest_images(self, THRESHOLD=0.5):
         log.info(f'matching pairs for {self.master_file}')
