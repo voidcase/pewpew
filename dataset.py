@@ -1,15 +1,21 @@
 import h5py as h5
 import sys
 from pathlib import Path
+from datetime import datetime
 import logging as log
 import config as cfg
 import json
 import re
 
 
-def get_timestamps(master_path: Path, num_frames) -> list:
-    from datetime import datetime
+def get_timestamps_log(master_path, num_frames, exposure_time):
+    log = Path('/data/staff/common/ML-crystals/eiger_logs/filewriter_api.log-20181120')
+    match = '/'.join(Path(master_path).parts[-2:])[:-10]
+    fmt = lambda s: datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f')
+    pass
 
+
+def get_timestamps(master_path: Path, num_frames) -> list:
     DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
     f = h5.File(str(master_path))
     try:
@@ -132,7 +138,6 @@ def parse_sigstr(fp: Path):
         if not match:
             return None
         return int(match.group(1))
-
 
 
 def test_parse_sigstr():

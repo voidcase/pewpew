@@ -7,6 +7,7 @@ from tensorflow import keras
 from tensorflow.nn import relu
 from pathlib import Path
 
+
 def build_model():
     md = keras.models.Sequential()
     md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
@@ -27,22 +28,13 @@ def load_data(path):
 
 def get_dataset_df(csv_path: Path):
     df = pd.read_csv(str(csv_path))
-    df['sample'] = df['filename'].map(
-        lambda x: re.search('Sample-([0-9]+-[0-9]+)', x).group(1)
-        )
-    df['scan'] = df['filename'].map(
-        lambda x: re.search('local-user_([0-9]+)_', x).group(1)
-        )
+    df['sample'] = df['filename'].map(lambda x: re.search('Sample-([0-9]+-[0-9]+)', x).group(1))
+    df['scan'] = df['filename'].map(lambda x: re.search('local-user_([0-9]+)_', x).group(1))
     return df
 
 
-
 def load_data_2(df: pd.DataFrame):
-    images = [
-        prep_img(cv2.imread(fname, cv2.IMREAD_COLOR))
-        for fname in df['filename']
-        if Path(fname).exists()
-    ]
+    images = [prep_img(cv2.imread(fname, cv2.IMREAD_COLOR)) for fname in df['filename'] if Path(fname).exists()]
     y = np.array(df['y'])
     x = np.stack(images)
     return x, y
@@ -65,11 +57,7 @@ def grid(origin, distance, shape):
     '''
     origin: (x, y)
     '''
-    return [
-        (origin[0] + distance * i, origin[1] + distance * j)
-        for i in range(shape[0])
-        for j in range(shape[1])
-    ]
+    return [(origin[0] + distance * i, origin[1] + distance * j) for i in range(shape[0]) for j in range(shape[1])]
 
 
 def center_of(img):
@@ -113,9 +101,8 @@ if __name__ == '__main__':
     md = build_model()
     df = get_dataset_df(Path('/mnt/staff/common/ML-crystals/csv/data_0.5.csv'))
     train_df = df[df['sample'] != '3-09']
-    test_df  = df[df['sample'] == '3-09']
+    test_df = df[df['sample'] == '3-09']
     val_x, val_y = load_data_2(test_df)
     for i in range(5):
-        x, y = load_data_2(train_df[i*300:(i+1)*300])
-        md.fit(x, y, validation_data=(val_x, val_y), shuffle=True)
-    print('ta-daaa')
+        x, y = load_data_2(datafile, max_rows=500)
+        md.fit(x, y)
