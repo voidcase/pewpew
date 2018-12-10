@@ -1,5 +1,6 @@
 import cv2
 import re
+import json
 import numpy as np
 import pandas as pd
 from skimage.transform import resize
@@ -25,11 +26,44 @@ def load_data(path):
     filenames = listdir(path)
     return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
 
+def get_meta_path(sample, scan):
+    base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
+    tss_dir = base_raw_path / f'Sample-{sample}/timed_snapshots/'
+    metaglob = tss_dir.glob(f'local-user_{scan}_*.meta.txt')
+    try:
+        return next(metaglob)
+    except StopIteration:
+        print(f'no meta file for {sample} {scan}')
+        return None
 
-def get_dataset_df(csv_path: Path):
+
+def get_meta_file(row):
+    with open(str(get_meta_path(row['sample'], row['scan'])), 'r') as f:
+        return json.load(f)
+
+
+def get_sample(x: Path):
+    return str(re.search('Sample-([0-9]+-[0-9]+)', str(x)).group(1))
+
+
+def get_scan(x: Path):
+    return str(re.search('local-user_([0-9]+)_', str(x)).group(1))
+
+
+def get_dataset_df(csv_path = Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
+    base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
+
     df = pd.read_csv(str(csv_path))
-    df['sample'] = df['filename'].map(lambda x: re.search('Sample-([0-9]+-[0-9]+)', x).group(1))
-    df['scan'] = df['filename'].map(lambda x: re.search('local-user_([0-9]+)_', x).group(1))
+    df['sample'] = df['filename'].map(get_sample)
+    df['scan'] = df['filename'].map(get_scan)
+    print('loading meta files')
+    metas = {
+        (get_sample(p), get_scan(p)): json.load(open(str(p), 'r'))
+        for p in base_raw_path.rglob('*.meta.txt')
+        if 'Sample-' in str(p)
+        }
+    print('meta loaded')
+    df['zoom'] = df.apply(lambda x: metas[(x['sample'], x['scan'])].get('zoom1','AAA'),axis=1)
     return df
 
 
