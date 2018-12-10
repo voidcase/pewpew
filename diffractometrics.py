@@ -12,12 +12,12 @@ import logging as log
 class QueueEntry:
     DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
 
-    def __init__(self, meta, sample_dir, offset=DEFAULT_TIME_OFFSET):
+    def __init__(self, meta, sample_dir):
         self.meta = meta
-        self.offset = offset
         self.sample_dir = Path(sample_dir)
         self.master_file = Path(meta["fileinfo"]["filename"])
-        self.nbr_images = meta["oscillation_sequence"][0]["number_of_images"]
+        self.nbr_frames = meta["oscillation_sequence"][0]["number_of_images"]
+        self.exposure_time = meta["oscillation_sequence"][0]["exposure_time"]
         self.zoom = meta.get("zoom1", None)
         self.frontlight = meta.get("backlight", None)
         self.prefix = f"{meta['fileinfo']['prefix']}_{meta['fileinfo']['run_number']}"
@@ -49,7 +49,7 @@ class QueueEntry:
                         float(candidates[i + 1].stem[len(self.prefix) + 1 :]),
                     ]
                 )
-                - self.offset
+                - self.DEFAULT_TIME_OFFSET
             )
 
             # Skip images taken before collection

@@ -4,9 +4,10 @@ from uuid import uuid4
 import json
 
 
-def read_meta(filename) -> dict:
-    with open(filename, "r") as f:
-        return json.load(f)
+def read_meta(*args) -> dict:
+    for filename in args:
+        with open(filename, "r") as f:
+            yield json.load(f)
 
 
 def get_meta_files(snapshot_dir):

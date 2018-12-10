@@ -6,28 +6,44 @@ import logging as log
 import config as cfg
 import json
 import re
+from diffractometrics import QueueEntry
 
 
-def get_timestamps_log(master_path, num_frames, exposure_time):
-    log = Path('/data/staff/common/ML-crystals/eiger_logs/filewriter_api.log-20181120')
-    match = '/'.join(Path(master_path).parts[-2:])[:-10]
-    fmt = lambda s: datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f')
-    pass
+def get_timestamps_log(entry: QueueEntry):
+    fmt = lambda s: datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+    log = Path('/data/staff/common/ML-crystals/eiger_logs/timestamps.log')
+    sample, scan = '/'.join(Path(entry.master_file).parts[-2:])[:-10].split('/')
+    start_re = re.compile(r'^Starting.*{}\/{}.*at\s(\d.+)$'.format(sample, scan))
+    finish_re = re.compile(r'^Finished.*{}\/{}.*at\s(\d.+)$'.format(sample, scan))
+    matches = []
+    with open(log, 'r') as f:
+        for line in f:
+            # No point in matching second match if we haven't found first
+            match = start_re.match(line) if len(matches) == 0 else finish_re.match(line)
+            if match is not None:
+                matches.append(fmt(match.group(1)))
+    if len(matches) != 2:
+        raise Exception(f'Could not find start and/or finish time for {entry.master_file}')
+
+    duration = entry.nbr_frames * entry.exposure_time
+    diff = matches[1] - matches[0]
+    start_time = matches[0] + (diff - duration)
+    return [start_time + (frame_nbr * entry.exposure_time) for frame_nbr in range(entry.nbr_frames)]
 
 
-def get_timestamps(master_path: Path, num_frames) -> list:
+def get_timestamps(entry: QueueEntry) -> list:
     DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
-    f = h5.File(str(master_path))
+    f = h5.File(str(entry.master_file))
     try:
         datestr = f[DATEPATH].value
     except KeyError:
-        print(f'file "{master_path}" does not have dataset "{DATEPATH}, exiting."', file=sys.stderr)
+        print(f'file "{entry.master_file}" does not have dataset "{DATEPATH}, exiting."', file=sys.stderr)
         sys.exit(1)
     start_time = datetime.strptime(datestr.decode(), '%Y-%m-%dT%H:%M:%S.%f')
     exposure_time = f['entry/instrument/detector/frame_time'].value
     readout_time = f['entry/instrument/detector/detector_readout_time'].value
     frame_time = exposure_time + readout_time
-    return [start_time.timestamp() + frame_time * i for i in range(num_frames)]
+    return [start_time.timestamp() + frame_time * i for i in range(entry.nbr_frames)]
 
 
 def gen_cbf(sample_dir, dst_dir):
