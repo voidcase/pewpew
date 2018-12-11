@@ -1,21 +1,23 @@
-import cv2
+import cv2 as cv
 import re
 import json
 import numpy as np
 import pandas as pd
-from skimage.transform import resize
-from tensorflow import keras
-from tensorflow.nn import relu
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Activation, Conv2D, Flatten
+
+INPUT_SHAPE = (128, 128, 3)
 
 
 def build_model():
-    md = keras.models.Sequential()
-    md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
-    md.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation=relu))
-    md.add(keras.layers.Flatten())
-    md.add(keras.layers.Dense(32, activation=relu))
-    md.add(keras.layers.Dense(1, activation=relu))
+    md = Sequential()
+    md.add(Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=INPUT_SHAPE))
+    md.add(Conv2D(filters=32, kernel_size=3, activation='relu'))
+    md.add(Flatten())
+    md.add(Dense(32, activation='relu'))
+    md.add(Dense(1, activation='relu'))
     md.compile(optimizer='adam', loss='mean_squared_error')
     return md
 
@@ -24,7 +26,7 @@ def load_data(path):
     from os import listdir
 
     filenames = listdir(path)
-    return np.stack([cv2.imread(path + fn, 1) for fn in filenames])
+    return np.stack([cv.imread(path + fn, 1) for fn in filenames])
 
 def get_meta_path(sample, scan):
     base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
@@ -45,10 +47,24 @@ def get_meta_file(row):
 def get_sample(x: Path):
     return str(re.search('Sample-([0-9]+-[0-9]+)', str(x)).group(1))
 
-
 def get_scan(x: Path):
     return str(re.search('local-user_([0-9]+)_', str(x)).group(1))
 
+def sample_dir(image_path):
+    return '/'.join(Path(image_path).parts[:8])[1:]
+
+def split_dataset(df):
+    # df -> train, valid, test
+    samples = set(map(sample_dir, df['filename']))
+    train, rest = train_test_split(list(samples), test_size=0.4, random_state=42)
+    valid, test = train_test_split(list(samples - set(train)), test_size=0.5, random_state=42)
+    return train, valid, test
+
+def samples_to_xy(df, samples: list):
+    """df, ['sample_dir'] -> ([img], ['y'])"""
+    flag = cv.IMREAD_COLOR if INPUT_SHAPE[2] == 3 else cv.IMREAD_GRAYSCALE
+    rows = df[df['filename'].apply(sample_dir).isin(samples)]
+    return rows['filename'].progress_apply(lambda path: prep_img(cv.imread(path, flag))), rows['y']
 
 def get_dataset_df(csv_path = Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
     base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
@@ -66,9 +82,19 @@ def get_dataset_df(csv_path = Path('/data/staff/common/ML-crystals/csv/data_0.5.
     df['zoom'] = df.apply(lambda x: metas[(x['sample'], x['scan'])].get('zoom1','AAA'),axis=1)
     return df
 
+def get_dataset(df):
+    train, valid, test = split_dataset(df)
+    x_train, y_train = samples_to_xy(df, train)
+    x_valid, y_valid = samples_to_xy(df, valid)
+    x_test, y_test = samples_to_xy(df, test)
+    X_train = np.stack(x_train.values).reshape(len(x_train), *INPUT_SHAPE)
+    X_valid = np.stack(x_valid.values).reshape(len(x_valid), *INPUT_SHAPE)
+    X_test = np.stack(x_test.values).reshape(len(x_test), *INPUT_SHAPE)
+    return [dict(x=X_train, y=y_train), dict(x=X_valid, y=y_valid), dict(x=X_test, y=y_test)]
 
 def load_data_2(df: pd.DataFrame):
-    images = [prep_img(cv2.imread(fname, cv2.IMREAD_COLOR)) for fname in df['filename'] if Path(fname).exists()]
+    flag = cv.IMREAD_COLOR if INPUT_SHAPE[2] == 3 else cv.IMREAD_GRAYSCALE
+    images = [prep_img(cv.imread(fname, flag)) for fname in df['filename'] if Path(fname).exists()]
     y = np.array(df['y'])
     x = np.stack(images)
     return x, y
@@ -107,7 +133,7 @@ def prep_img(img, center_on=None, crop_radius=None):
     if crop_radius and crop_radius < imrad:
         imrad = crop_radius
     img = img[cy - imrad : cy + imrad, cx - imrad : cx + imrad]
-    return resize(img, (128, 128))
+    return cv.resize(img, (128, 128))
 
 
 def create_heatmap(img, model, origo, mapshape, spacing):
@@ -133,7 +159,7 @@ if __name__ == '__main__':
     # pts, yp = create_heatmap(raw[0], md, (10, 10), (30, 30), 3)
     # draw_heatmap(x[0], pts, yp)
     md = build_model()
-    df = get_dataset_df(Path('/mnt/staff/common/ML-crystals/csv/data_0.5.csv'))
+    df = get_dataset_df(Path('/data/staff/common/ML-crystals/csv/data_0.5.csv'))
     train_df = df[df['sample'] != '3-09']
     test_df = df[df['sample'] == '3-09']
     val_x, val_y = load_data_2(test_df)
