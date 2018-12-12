@@ -1,21 +1,60 @@
 from pathlib import Path
-from multiprocessing import pool
+from datetime import datetime
 import numpy as np
-import subprocess
-import json
-
-import dataset
+import h5py as h5
 import config as cfg
 import logging as log
+import json
+import re
+import sys
+
+log.basicConfig(filename=f'logs/{Path(__file__).stem}.log', level=log.INFO)
+
+LOG_TIMESTAMPS_WHITELIST = {
+    'Sample-3-01',
+    'Sample-4-01',
+    'Sample-3-10',
+    'Sample-4-02',
+    'Sample-4-08',
+    'Sample-3-02',
+    'Sample-4-09',
+    'Sample-2-07',
+    'Sample-1-03',
+    'Sample-1-05',
+    'Sample-4-04',
+    'Sample-3-05',
+    'Sample-3-11',
+    'Sample-4-14',
+    'Sample-4-15',
+    'Sample-3-12',
+    'Sample-4-16',
+    'Sample-3-03',
+    'Sample-1-02',
+    'Sample-3-04',
+    'Sample-3-09',
+    'Sample-4-12',
+    'Sample-4-06',
+    'Sample-4-07',
+    'Sample-3-15',
+    'Sample-3-16',
+    'Sample-3-08',
+    'Sample-3-06',
+    'Sample-4-03',
+    'Sample-4-11',
+    'Sample-3-13',
+    'Sample-4-13',
+    'Sample-2-08',
+    'Sample-3-07',
+}
 
 
 class QueueEntry:
     DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
 
-    def __init__(self, meta, sample_dir):
+    def __init__(self, meta):
         self.meta = meta
-        self.sample_dir = Path(sample_dir)
         self.master_file = Path(meta["fileinfo"]["filename"])
+        self.sample_dir = self.master_file.parent
         self.nbr_frames = meta["oscillation_sequence"][0]["number_of_images"]
         self.exposure_time = meta["oscillation_sequence"][0]["exposure_time"]
         self.zoom = meta.get("zoom1", None)
@@ -30,9 +69,11 @@ class QueueEntry:
             json.dump(pairs, f, indent=4)
 
     def __find_closest_images(self, THRESHOLD=0.5):
-        log.info(f'matching pairs for {self.master_file}')
+        print(f'matching pairs for {self.master_file}')
         data_pairs = {}
-        timestamps = dataset.get_timestamps(self.__local_master_file(), self.nbr_images)
+        timestamps = (
+            self.__get_timestamps_log() if self.sample_dir.name in LOG_TIMESTAMPS_WHITELIST else self.__get_timestamps()
+        )
         candidates = sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)
 
         ts_i = 0
@@ -71,42 +112,43 @@ class QueueEntry:
 
         return data_pairs
 
-    def __local_master_file(self):
-        return self.sample_dir / self.master_file.name
+    def __get_timestamps_log(self):
+        fmt = lambda s: datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+        log = Path('/data/staff/common/ML-crystals/eiger_logs/timestamps.log')
+        sample, scan = '/'.join(Path(self.master_file).parts[-2:])[:-10].split('/')
+        start_re = re.compile(r'^Starting.*{}\/{}_data_000001.*at\s(\d.+)$'.format(sample, scan))
+        finish_re = re.compile(r'^Finished.*{}\/{}_data_000001.*at\s(\d.+)$'.format(sample, scan))
+        matches = []
+        with open(log, 'r') as f:
+            for line in f:
+                # No point in matching second match if we haven't found first
+                match = start_re.match(line) if len(matches) == 0 else finish_re.match(line)
+                if match is not None:
+                    matches.append(fmt(match.group(1)))
+        if len(matches) != 2:
+            raise Exception(f'Could not find start and/or finish time for {self.master_file}')
+
+        duration = self.nbr_frames * self.exposure_time
+        diff = matches[1] - matches[0]
+        start_time = matches[0] + (diff - duration)
+        return [start_time + (frame_nbr * self.exposure_time) for frame_nbr in range(self.nbr_frames)]
+
+    def __get_timestamps(self) -> list:
+        DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
+        f = h5.File(str(self.master_file))
+        try:
+            datestr = f[DATEPATH].value
+        except KeyError:
+            print(f'file "{self.master_file}" does not have dataset "{DATEPATH}, exiting."', file=sys.stderr)
+            sys.exit(1)
+        start_time = datetime.strptime(datestr.decode(), '%Y-%m-%dT%H:%M:%S.%f')
+        exposure_time = f['entry/instrument/detector/frame_time'].value
+        readout_time = f['entry/instrument/detector/detector_readout_time'].value
+        frame_time = exposure_time + readout_time
+        return [start_time.timestamp() + frame_time * i for i in range(self.nbr_frames)]
 
     def __str__(self):
         return str(Path(self.master_file))
 
     def __repr__(self):
         return self.__str__()
-
-
-def number_frames(master: Path):
-    res = subprocess.run([cfg.EIGER_2_CBF, master], stdout=subprocess.PIPE)
-    return int(res.stdout)
-
-
-# Not sure if working :)
-def run(cmds):
-    with pool.Pool(processes=None) as p:
-        return_codes = p.map(subprocess.call, cmds)
-        failed_idx = np.argwhere(np.array(return_codes) > 0)
-        if len(failed_idx) > 0:
-            failed_files = [cmd[1] for i, cmd in enumerate(cmds) if np.any(np.isin(failed_idx, i))]
-            raise Exception(f"ERROR: {failed_files}")
-
-
-def eiger2cbf_command(out: Path, master: Path, n: int, m: int = None):
-    """ Run eiger2cbg on all files in masters. n and m is same for all files """
-    cmd = [cfg.EIGER_2_CBF, master, n]
-    sub_dir = out / master.name[:-3]  # Remove .h5
-    if not sub_dir.is_dir():
-        sub_dir.mkdir()
-    out_file = None
-    if m is None:
-        out_file = f'{sub_dir}/out_{n:06}.cbf'
-    else:
-        cmd[2] = f'{n}:{m}'
-        out_file = f'{sub_dir}/out'
-    cmd.append(out_file)
-    return list(map(str, cmd))
