@@ -1,7 +1,7 @@
 from pathlib import Path
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
-from compile_dataset import get_dataset_df, get_dataset
+from dataset.compile import get_dataset_df, get_dataset
 
 INPUT_SHAPE = (128, 128, 3)
 

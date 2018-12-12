@@ -5,9 +5,6 @@ import numpy as np
 import json
 import subprocess
 import re
-from tqdm import tqdm
-
-tqdm.pandas()
 
 
 def run(cmds):
