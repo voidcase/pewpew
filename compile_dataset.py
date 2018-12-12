@@ -3,6 +3,7 @@ import json
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import re
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from utils import get_sample, get_scan
@@ -40,6 +41,7 @@ def samples_to_xy(df, samples: list, channels: int):
 
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
+
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
     df['sample'] = df['filename'].map(get_sample)
@@ -50,8 +52,13 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
         for p in base_raw_path.rglob('*.meta.txt')
         if 'Sample-' in str(p)
     }
+
+    def get_zoom_int(row):
+        zoomtext = metas[(row['sample'], row['scan'])].get('zoom1', 'AAA') or 'Zoom 0'
+        return int(re.search('Zoom ([0-9]+)$', zoomtext).group(1))
+
     print('meta loaded')
-    df['zoom'] = df.apply(lambda x: metas[(x['sample'], x['scan'])].get('zoom1', 'AAA'), axis=1)
+    df['zoom'] = df.apply(get_zoom_int, axis=1)
     return df
 
 
