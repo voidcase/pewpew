@@ -1,8 +1,6 @@
 import json
-from pprint import pprint
-from pathlib import Path
 import re
-
+from pathlib import Path
 
 ROOT = Path('/data/staff/common/ML-crystals/meta_sandbox')
 # ROOT = Path('/data/visitors/biomax/20180479/20181119/raw')
@@ -17,7 +15,6 @@ def group_by_sample(root: Path):
         meta_reader = open(str(path), 'r')
         meta = json.load(meta_reader)
         meta_reader.close()
-        meta['fileinfo']['filename']
         sample = get_sample(meta['fileinfo']['filename'])
         sample_dir = root / f'Sample-{sample}'
         if not sample_dir.is_dir():

@@ -3,12 +3,10 @@ from datetime import datetime
 import numpy as np
 import h5py as h5
 import config as cfg
-import logging as log
 import json
 import re
 import sys
 
-log.basicConfig(filename=f'logs/{Path(__file__).stem}.log', level=log.INFO)
 
 LOG_TIMESTAMPS_WHITELIST = {
     'Sample-3-01',
@@ -68,7 +66,7 @@ class QueueEntry:
         with open(cfg.DATA_DIR / name, "w") as f:
             json.dump(pairs, f, indent=4)
 
-    def __find_closest_images(self, THRESHOLD=0.5):
+    def __find_closest_images(self, threshold=0.5):
         print(f'matching pairs for {self.master_file}')
         data_pairs = {}
         timestamps = (
@@ -84,13 +82,13 @@ class QueueEntry:
                 break
             ts = timestamps[ts_i]
             img_ts = (
-                np.array(
-                    [
-                        float(candidates[i].stem[len(self.prefix) + 1 :]),
-                        float(candidates[i + 1].stem[len(self.prefix) + 1 :]),
-                    ]
-                )
-                - self.DEFAULT_TIME_OFFSET
+                    np.array(
+                        [
+                            float(candidates[i].stem[len(self.prefix) + 1:]),
+                            float(candidates[i + 1].stem[len(self.prefix) + 1:]),
+                        ]
+                    )
+                    - self.DEFAULT_TIME_OFFSET
             )
 
             # Skip images taken before collection
@@ -102,7 +100,7 @@ class QueueEntry:
             closest_idx = np.argmin(diff)
 
             # Only add images if they are a taken close enough
-            if diff[closest_idx] < THRESHOLD:
+            if diff[closest_idx] < threshold:
                 data_pairs[candidates[i + closest_idx].name] = ts_i + 1
                 ts_i += 1
                 i += 2

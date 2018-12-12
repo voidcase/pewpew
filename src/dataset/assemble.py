@@ -7,6 +7,9 @@ import re
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from utils import get_sample, get_scan
+from tqdm import tqdm
+
+tqdm.pandas()
 
 
 def get_meta_path(sample, scan):
@@ -85,7 +88,7 @@ def prep_img(img, center_on=None, crop_radius=None):
     imrad = min(cx, cy, img.shape[0] - cy, img.shape[1] - cx)
     if crop_radius and crop_radius < imrad:
         imrad = crop_radius
-    img = img[cy - imrad : cy + imrad, cx - imrad : cx + imrad]
+    img = img[cy - imrad: cy + imrad, cx - imrad: cx + imrad]
     return cv.resize(img, (128, 128))
 
 
