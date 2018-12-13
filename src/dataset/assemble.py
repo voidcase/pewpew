@@ -36,15 +36,18 @@ def split_dataset(df):
     return train, valid, test
 
 
+def find_crop_radius(row):
+    return 64+64*row['zoom']
+
+
 def samples_to_xy(df, samples: list, channels: int):
     """df, ['sample_dir'] -> ([img], ['y'])"""
     flag = cv.IMREAD_COLOR if channels == 3 else cv.IMREAD_GRAYSCALE
     rows = df[df['filename'].apply(get_sample).isin(samples)]
-    return rows['filename'].progress_apply(lambda path: prep_img(cv.imread(path, flag))), rows['y']
+    return rows.progress_apply(lambda row: prep_img(cv.imread(row['filename'], flag), crop_radius=find_crop_radius(row)), axis=1), rows['y']
 
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
-
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
     df['sample'] = df['filename'].map(get_sample)
@@ -81,6 +84,17 @@ def center_of(img):
     return tuple(img.shape[a] // 2 for a in [1, 0])
 
 
+def adjust_gamma(image, gamma=1.0):
+    # build a lookup table mapping the pixel values [0, 255] to
+    # their adjusted gamma values
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
+ 
+    # apply gamma correction using the lookup table
+    return cv.LUT(image, table)
+
+
 def prep_img(img, center_on=None, crop_radius=None):
     if not center_on:
         center_on = center_of(img)
@@ -89,7 +103,9 @@ def prep_img(img, center_on=None, crop_radius=None):
     if crop_radius and crop_radius < imrad:
         imrad = crop_radius
     img = img[cy - imrad: cy + imrad, cx - imrad: cx + imrad]
+    img = adjust_gamma(img, 2.5)
     return cv.resize(img, (128, 128))
+
 
 
 def show_some(data: pd.DataFrame):
@@ -97,6 +113,6 @@ def show_some(data: pd.DataFrame):
     for i, (_, row) in enumerate(data.sample(n=min(9, len(data))).iterrows()):
         fig.add_subplot(3, 3, i + 1, title=f'{row["sample"]}-{row["scan"]} y:{row["y"]} z:{row["zoom"]}')
         img = cv.imread(row['filename'])
-        img = prep_img(img)
+        img = prep_img(img, crop_radius=find_crop_radius(row))
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
