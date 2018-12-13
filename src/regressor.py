@@ -1,7 +1,7 @@
 from pathlib import Path
 from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten
-from dataset.compile import get_dataset_df, get_dataset
+from dataset.assemble import get_dataset_df, get_dataset
 
 INPUT_SHAPE = (128, 128, 3)
 
@@ -19,7 +19,7 @@ def build_model():
 
 if __name__ == '__main__':
     df = get_dataset_df(Path('/data/staff/common/ML-crystals/csv/data_0.5.csv'))
-    train_df = df[df['y'] > 100]
+    train_df = df[df['y'] > 10]
     train, valid, test = get_dataset(train_df, INPUT_SHAPE)
     model = build_model()
     model.fit(train['x'], train['y'], epochs=3, batch_size=32, validation_data=(valid['x'], valid['y']))
