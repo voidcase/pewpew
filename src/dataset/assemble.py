@@ -1,3 +1,4 @@
+
 import cv2 as cv
 import json
 import numpy as np
@@ -37,19 +38,26 @@ def split_dataset(df):
 
 
 def find_crop_radius(row):
-    return 64+64*row['zoom']
+    return 64 + 64 * row['zoom']
 
 
-def samples_to_xy(df, samples: list, channels: int):
-    """df, ['sample_dir'] -> ([img], ['y'])"""
+def samples_to_xy(df, samples: list, input_shape: tuple):
+    """df, ['sample_dir'] -> ([img], ['y_norm'])"""
+    channels = input_shape[2]
     flag = cv.IMREAD_COLOR if channels == 3 else cv.IMREAD_GRAYSCALE
     rows = df[df['filename'].apply(get_sample).isin(samples)]
-    return rows.progress_apply(lambda row: prep_img(cv.imread(row['filename'], flag), crop_radius=find_crop_radius(row)), axis=1), rows['y']
+    x = rows.progress_apply(
+        lambda row: prep_img(cv.imread(row['filename'], flag), input_shape[:2], crop_radius=find_crop_radius(row)),
+        axis=1)
+    x = np.stack(x.values).reshape(len(x), *input_shape)
+    y = rows['y']
+    return x, y
 
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
+    df = df[df['y'] > 0]
     df['sample'] = df['filename'].map(get_sample)
     df['scan'] = df['filename'].map(get_scan)
     print('loading meta files')
@@ -69,33 +77,43 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
 
 
 def get_dataset(df, input_shape):
-    channels = input_shape[2]
     train, valid, test = split_dataset(df)
-    x_train, y_train = samples_to_xy(df, train, channels)
-    x_valid, y_valid = samples_to_xy(df, valid, channels)
-    x_test, y_test = samples_to_xy(df, test, channels)
-    X_train = np.stack(x_train.values).reshape(len(x_train), *input_shape)
-    X_valid = np.stack(x_valid.values).reshape(len(x_valid), *input_shape)
-    X_test = np.stack(x_test.values).reshape(len(x_test), *input_shape)
-    return [dict(x=X_train, y=y_train), dict(x=X_valid, y=y_valid), dict(x=X_test, y=y_test)]
+    x_train, y_train = samples_to_xy(df, train, input_shape)
+    mean, std = norm_values(y_train)
+    y_train = y_norm(y_train, mean, std)
+    x_valid, y_valid = samples_to_xy(df, valid, input_shape)
+    y_valid = y_norm(y_valid, mean, std)
+    x_test, y_test = samples_to_xy(df, test, input_shape)
+    y_test = y_norm(y_test, mean, std)
+    return [dict(x=x_train, y=y_train), dict(x=x_valid, y=y_valid), dict(x=x_test, y=y_test)]
 
 
 def center_of(img):
     return tuple(img.shape[a] // 2 for a in [1, 0])
 
 
+def y_norm(y, mean, std):
+    y = np.log(y)
+    return (y - mean) / std
+
+
+def norm_values(y):
+    y = np.log(y)
+    return np.mean(y), np.std(y)
+
+
 def adjust_gamma(image, gamma=1.0):
     # build a lookup table mapping the pixel values [0, 255] to
     # their adjusted gamma values
-    invGamma = 1.0 / gamma
-    table = np.array([((i / 255.0) ** invGamma) * 255
-        for i in np.arange(0, 256)]).astype("uint8")
- 
+    inv_gamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** inv_gamma) * 255
+                      for i in np.arange(0, 256)]).astype("uint8")
+
     # apply gamma correction using the lookup table
     return cv.LUT(image, table)
 
 
-def prep_img(img, center_on=None, crop_radius=None):
+def prep_img(img, shape: tuple, center_on=None, crop_radius=None):
     if not center_on:
         center_on = center_of(img)
     cx, cy = center_on
@@ -104,8 +122,7 @@ def prep_img(img, center_on=None, crop_radius=None):
         imrad = crop_radius
     img = img[cy - imrad: cy + imrad, cx - imrad: cx + imrad]
     img = adjust_gamma(img, 2.5)
-    return cv.resize(img, (128, 128))
-
+    return cv.resize(img, shape)
 
 
 def show_some(data: pd.DataFrame):
@@ -116,3 +133,4 @@ def show_some(data: pd.DataFrame):
         img = prep_img(img, crop_radius=find_crop_radius(row))
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
+
