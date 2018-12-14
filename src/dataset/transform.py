@@ -48,8 +48,13 @@ def cropped_img(row, center_on=None, crop_radius=None):
 
 # =======================================
 
-def norm_y(df: pd.DataFrame) -> pd.DataFrame:
-    # TODO
+def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
+    df = df.copy()
+    yn = df[df['sample'].isin(conf['norm_after_samples'])]['y']  # the Y we will scale after
+    mean = np.mean(yn)
+    std = np.std(yn)
+    df['y'] = np.log(df['y'])
+    df['y'] = (df['y'] - mean) / std
     return df
 
 def aug_flip(df: pd.DataFrame) -> pd.DataFrame:
@@ -57,6 +62,7 @@ def aug_flip(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 def row_map(df: pd.DataFrame, dst: str, func: callable, **kwargs):
+    df = df.copy()
     df[dst] = df.progress_apply(
         func,
         axis=1,
@@ -70,17 +76,20 @@ def row_pipeline(row, funcs, col):
         tmp[col] = f(tmp, **kwargs)
     return tmp[col]
 
-def load_and_znorm(df):
+def load_and_znorm(df, conf=dict()):
+    df = df.copy()
+    # I admit this is a bit to meta.
     return row_map(df, 'img', row_pipeline, args=(
             [
-            (raw_img, {}),
+            (raw_img, {'color': (conf['input_shape'][2] == 3)}),
             (cropped_img, {}),
-            (resized_img, {}),
+            (resized_img, {'size': conf['input_shape'][:2]}),
             ], 'img')
         )
 
-def apply_all_transforms(df):
-    df = load_and_znorm(df)
+def apply_all_transforms(df: pd.DataFrame, conf: dict):
+    df = load_and_znorm(df, conf)
     df = row_map(df, 'img', relit_img)
+    df = norm_y(df, conf)
     return df
 

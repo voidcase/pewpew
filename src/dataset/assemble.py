@@ -1,3 +1,4 @@
+
 import cv2 as cv
 import json
 import numpy as np
@@ -33,15 +34,18 @@ def split_dataset(df):
     valid, test = train_test_split(list(samples - set(train)), test_size=0.5, random_state=42)
     return train, valid, test
 
-def samples_to_xy(df, samples: list, color: bool):
+def samples_to_xy(df, samples: list, transform_conf: dict):
     """df, ['sample_dir'] -> ([img], ['y'])"""
     sample_df = df[df['filename'].apply(get_sample).isin(samples)]
-    sample_df = tf.apply_all_transforms(sample_df)
-    return sample_df['img'], sample_df['y']
+    sample_df = tf.apply_all_transforms(sample_df, transform_conf)
+    x = np.stack(sample_df['img'].values).reshape(len(sample_df), *(transform_conf['input_shape']))
+    y = sample_df['y'].values
+    return x, y
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
+    df = df[df['y'] > 0]
     df['sample'] = df['filename'].map(get_sample)
     df['scan'] = df['filename'].map(get_scan)
     print('loading meta files')
@@ -62,13 +66,14 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
 def get_dataset(df, input_shape):
     color = (input_shape[2] == 3)
     train, valid, test = split_dataset(df)
-    x_train, y_train = samples_to_xy(df, train, color)
-    x_valid, y_valid = samples_to_xy(df, valid, color)
-    x_test,  y_test  = samples_to_xy(df, test,  color)
-    X_train = np.stack(x_train.values).reshape(len(x_train), *input_shape)
-    X_valid = np.stack(x_valid.values).reshape(len(x_valid), *input_shape)
-    X_test = np.stack(x_test.values).reshape(len(x_test), *input_shape)
-    return [dict(x=X_train, y=y_train), dict(x=X_valid, y=y_valid), dict(x=X_test, y=y_test)]
+    transform_conf = dict(norm_after_samples=train, input_shape=input_shape)
+    x_train, y_train = samples_to_xy(df, train, transform_conf)
+    x_valid, y_valid = samples_to_xy(df, valid, transform_conf)
+    x_test,  y_test  = samples_to_xy(df, test,  transform_conf)
+    X_train = np.stack(x_train).reshape(len(x_train), *input_shape)
+    X_valid = np.stack(x_valid).reshape(len(x_valid), *input_shape)
+    X_test = np.stack(x_test).reshape(len(x_test), *input_shape)
+    return [dict(x=x_train, y=y_train), dict(x=x_valid, y=y_valid), dict(x=x_test, y=y_test)]
 
 def show_some(data: pd.DataFrame, seed=None):
     fig = plt.figure(figsize=(25, 25))
@@ -76,8 +81,6 @@ def show_some(data: pd.DataFrame, seed=None):
         fig.add_subplot(3, 3, i + 1, title=f'{row["sample"]}-{row["scan"]} y:{row["y"]} z:{row["zoom"]}')
         if 'img' in data:
             img = row['img']
-        else:
-            img = cv.imread(row['filename'])
-            img = prep_img(img, crop_radius=find_crop_radius(row))
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
+
