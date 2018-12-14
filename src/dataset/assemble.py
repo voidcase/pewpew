@@ -125,12 +125,12 @@ def prep_img(img, shape: tuple, center_on=None, crop_radius=None):
     return cv.resize(img, shape)
 
 
-def show_some(data: pd.DataFrame):
+def show_some(data: pd.DataFrame, img_shape: tuple):
     fig = plt.figure(figsize=(25, 25))
     for i, (_, row) in enumerate(data.sample(n=min(9, len(data))).iterrows()):
         fig.add_subplot(3, 3, i + 1, title=f'{row["sample"]}-{row["scan"]} y:{row["y"]} z:{row["zoom"]}')
         img = cv.imread(row['filename'])
-        img = prep_img(img, crop_radius=find_crop_radius(row))
+        img = prep_img(img, img_shape, crop_radius=find_crop_radius(row))
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
 
