@@ -1,0 +1,86 @@
+import cv2 as cv
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+
+tqdm.pandas()
+
+def _center_of(img):
+    return tuple(img.shape[a] // 2 for a in [1, 0])
+
+def _norm_zoom_radius(row):
+    return 64+64*row['zoom']
+
+# ============ROWTRANSFORMS===============
+
+def raw_img(row, color=True):
+    return cv.imread(
+        row['filename'],
+        cv.IMREAD_COLOR if color else cv.IMREAD_GRAYSCALE
+        )
+
+def resized_img(row, size=(128,128)):
+    return cv.resize(row['img'], size)
+
+def relit_img(row, gamma=1.0):
+    image = row['img']
+    # build a lookup table mapping the pixel values [0, 255] to
+    # their adjusted gamma values
+    invGamma = 1.0 / gamma
+    table = np.array([((i / 255.0) ** invGamma) * 255
+        for i in np.arange(0, 256)]).astype("uint8")
+ 
+    # apply gamma correction using the lookup table
+    return cv.LUT(image, table)
+
+def cropped_img(row, center_on=None, crop_radius=None):
+    img = row['img']
+    if not crop_radius:
+        crop_radius = _norm_zoom_radius(row)
+    if not center_on:
+        center_on = _center_of(img)
+    cx, cy = center_on
+    imrad = min(cx, cy, img.shape[0] - cy, img.shape[1] - cx)
+    if crop_radius and crop_radius < imrad:
+        imrad = crop_radius
+    img = img[cy - imrad: cy + imrad, cx - imrad: cx + imrad]
+    return img
+
+# =======================================
+
+def norm_y(df: pd.DataFrame) -> pd.DataFrame:
+    # TODO
+    return df
+
+def aug_flip(df: pd.DataFrame) -> pd.DataFrame:
+    # TODO
+    return df
+
+def row_map(df: pd.DataFrame, dst: str, func: callable, **kwargs):
+    df[dst] = df.progress_apply(
+        func,
+        axis=1,
+        **kwargs
+        )
+    return df
+
+def row_pipeline(row, funcs, col):
+    tmp = row.copy()
+    for f, kwargs in funcs:
+        tmp[col] = f(tmp, **kwargs)
+    return tmp[col]
+
+def load_and_znorm(df):
+    return row_map(df, 'img', row_pipeline, args=(
+            [
+            (raw_img, {}),
+            (cropped_img, {}),
+            (resized_img, {}),
+            ], 'img')
+        )
+
+def apply_all_transforms(df):
+    df = load_and_znorm(df)
+    df = row_map(df, 'img', relit_img)
+    return df
+
