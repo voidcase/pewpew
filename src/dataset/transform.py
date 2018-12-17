@@ -68,7 +68,7 @@ def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.concat([df, flipped], axis=0, ignore_index=True)
     return df
 
-def row_map(df: pd.DataFrame, dst: str, func: callable, args):
+def row_map(df: pd.DataFrame, dst: str, func: callable, args=tuple()):
     print(f'row mapping {func.__name__}')
     df = df.copy()
     df[dst] = df.progress_apply(
