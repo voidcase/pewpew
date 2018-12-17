@@ -74,7 +74,7 @@ def row_map(df: pd.DataFrame, dst: str, func: callable, args):
     df[dst] = df.progress_apply(
         func,
         axis=1,
-        args
+        args=args,
         )
     return df
 
