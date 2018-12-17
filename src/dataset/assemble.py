@@ -34,12 +34,14 @@ def split_dataset(df):
     valid, test = train_test_split(list(samples - set(train)), test_size=0.5, random_state=42)
     return train, valid, test
 
-def samples_to_xy(df, samples: list, transform_conf: dict):
+
+def pick_samples(df, samples):
+    return df[df['sample'].isin(samples)]
+
+def df_to_xy(df, transform_conf: dict):
     """df, ['sample_dir'] -> ([img], ['y'])"""
-    sample_df = df[df['filename'].apply(get_sample).isin(samples)]
-    sample_df = tf.apply_all_transforms(sample_df, transform_conf)
-    x = np.stack(sample_df['img'].values).reshape(len(sample_df), *(transform_conf['input_shape']))
-    y = sample_df['y'].values
+    x = np.stack(df['img'].values).reshape(len(df), *(transform_conf['input_shape']))
+    y = df['y'].values
     return x, y
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
@@ -67,12 +69,13 @@ def get_dataset(df, input_shape):
     color = (input_shape[2] == 3)
     train, valid, test = split_dataset(df)
     transform_conf = dict(norm_after_samples=train, input_shape=input_shape)
-    x_train, y_train = samples_to_xy(df, train, transform_conf)
-    x_valid, y_valid = samples_to_xy(df, valid, transform_conf)
-    x_test,  y_test  = samples_to_xy(df, test,  transform_conf)
-    X_train = np.stack(x_train).reshape(len(x_train), *input_shape)
-    X_valid = np.stack(x_valid).reshape(len(x_valid), *input_shape)
-    X_test = np.stack(x_test).reshape(len(x_test), *input_shape)
+    df_final = tf.apply_all_transforms(df, conf=transform_conf)
+    x_train, y_train = df_to_xy(pick_samples(df_final, train), transform_conf)
+    x_test, y_test = df_to_xy(pick_samples(df_final, test), transform_conf)
+    x_valid, y_valid = df_to_xy(pick_samples(df_final, valid), transform_conf)
+    # X_train = np.stack(x_train).reshape(len(x_train), *input_shape)
+    # X_valid = np.stack(x_valid).reshape(len(x_valid), *input_shape)
+    # X_test = np.stack(x_test).reshape(len(x_test), *input_shape)
     return [dict(x=x_train, y=y_train), dict(x=x_valid, y=y_valid), dict(x=x_test, y=y_test)]
 
 def show_some(data: pd.DataFrame, seed=None):
