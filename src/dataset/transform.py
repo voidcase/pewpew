@@ -49,24 +49,32 @@ def cropped_img(row, center_on=None, crop_radius=None):
 # =======================================
 
 def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
+    print('Y normalization')
     df = df.copy()
-    yn = df[df['sample'].isin(conf['norm_after_samples'])]['y']  # the Y we will scale after
+    if 'norm_after_samples' in conf:
+        yn = df[df['sample'].isin(conf['norm_after_samples'])]['y']  # the Y we will scale after
+    else:
+        yn = df['y']
     mean = np.mean(yn)
     std = np.std(yn)
     df['y'] = np.log(df['y'])
     df['y'] = (df['y'] - mean) / std
     return df
 
-def aug_flip(df: pd.DataFrame) -> pd.DataFrame:
-    # TODO
+def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
+    print('flip augmentation')
+    flipped = df.copy()
+    flipped['img'] = flipped['img'].progress_apply(lambda img: cv.flip(img, 1))  # flip along Y axis.
+    df = pd.concat([df, flipped], axis=0, ignore_index=True)
     return df
 
-def row_map(df: pd.DataFrame, dst: str, func: callable, **kwargs):
+def row_map(df: pd.DataFrame, dst: str, func: callable, args):
+    print(f'row mapping {func.__name__}')
     df = df.copy()
     df[dst] = df.progress_apply(
         func,
         axis=1,
-        **kwargs
+        args
         )
     return df
 
@@ -91,5 +99,6 @@ def apply_all_transforms(df: pd.DataFrame, conf: dict):
     df = load_and_znorm(df, conf)
     df = row_map(df, 'img', relit_img)
     df = norm_y(df, conf)
+    df = aug_hflip(df)
     return df
 
