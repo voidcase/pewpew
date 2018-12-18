@@ -83,7 +83,6 @@ def show_some(data: pd.DataFrame, seed=None):
     fig = plt.figure(figsize=(25, 25))
     for i, (_, row) in enumerate(data.sample(n=min(9, len(data)), random_state=seed).iterrows()):
         fig.add_subplot(3, 3, i + 1, title=f'{row["sample"]}-{row["scan"]} y:{row["y"]} z:{row["zoom"]}')
-        if 'img' in data:
-            img = row['img']
+        img = row['img']
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
