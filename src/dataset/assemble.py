@@ -1,5 +1,3 @@
-
-import cv2 as cv
 import json
 import numpy as np
 import pandas as pd
@@ -13,6 +11,7 @@ from tqdm import tqdm
 
 tqdm.pandas()
 
+
 def get_meta_path(sample, scan):
     base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
     tss_dir = base_raw_path / f'Sample-{sample}/timed_snapshots/'
@@ -23,9 +22,11 @@ def get_meta_path(sample, scan):
         print(f'no meta file for {sample} {scan}')
         return None
 
+
 def get_meta_file(row):
     with open(str(get_meta_path(row['sample'], row['scan'])), 'r') as f:
         return json.load(f)
+
 
 def split_dataset(df):
     # df -> train, valid, test
@@ -38,11 +39,13 @@ def split_dataset(df):
 def pick_samples(df, samples):
     return df[df['sample'].isin(samples)]
 
+
 def df_to_xy(df, transform_conf: dict):
     """df, ['sample_dir'] -> ([img], ['y'])"""
     x = np.stack(df['img'].values).reshape(len(df), *(transform_conf['input_shape']))
     y = df['y'].values
     return x, y
+
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
@@ -65,18 +68,16 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
     df['zoom'] = df.apply(get_zoom_int, axis=1)
     return df
 
+
 def get_dataset(df, input_shape):
-    color = (input_shape[2] == 3)
     train, valid, test = split_dataset(df)
     transform_conf = dict(norm_after_samples=train, input_shape=input_shape)
     df_final = tf.apply_all_transforms(df, conf=transform_conf)
     x_train, y_train = df_to_xy(pick_samples(df_final, train), transform_conf)
     x_test, y_test = df_to_xy(pick_samples(df_final, test), transform_conf)
     x_valid, y_valid = df_to_xy(pick_samples(df_final, valid), transform_conf)
-    # X_train = np.stack(x_train).reshape(len(x_train), *input_shape)
-    # X_valid = np.stack(x_valid).reshape(len(x_valid), *input_shape)
-    # X_test = np.stack(x_test).reshape(len(x_test), *input_shape)
     return [dict(x=x_train, y=y_train), dict(x=x_valid, y=y_valid), dict(x=x_test, y=y_test)]
+
 
 def show_some(data: pd.DataFrame, seed=None):
     fig = plt.figure(figsize=(25, 25))
@@ -86,4 +87,3 @@ def show_some(data: pd.DataFrame, seed=None):
             img = row['img']
         plt.imshow(img)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
-
