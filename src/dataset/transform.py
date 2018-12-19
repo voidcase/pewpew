@@ -46,6 +46,9 @@ def cropped_img(row, center_on=None, crop_radius=None):
     img = img[cy - imrad: cy + imrad, cx - imrad: cx + imrad]
     return img
 
+def normed_img(row):
+    return (row['img'] - np.mean(row['img'])) / np.std(row['img'])
+
 # =======================================
 
 def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
@@ -98,6 +101,7 @@ def load_and_znorm(df, conf=dict()):
 def apply_all_transforms(df: pd.DataFrame, conf: dict):
     df = load_and_znorm(df, conf)
     df = row_map(df, 'img', relit_img)
+    df = row_map(df, 'img', normed_img)
     df = norm_y(df, conf)
     df = aug_hflip(df)
     return df
