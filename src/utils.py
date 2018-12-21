@@ -26,11 +26,16 @@ def get_meta_files(snapshot_dir):
     d = Path(snapshot_dir)
     if not d.exists():
         raise Exception(f"Directory does not exists: {d.absolute()}")
-    return read_meta(Path(snapshot_dir).glob("*.meta.txt"))
+    return read_meta(*Path(snapshot_dir).glob("*.meta.txt"))
 
 
 def fts(ts):
     return datetime.fromtimestamp(ts).strftime("%H-%M-%S.%f")
+
+
+def fmt(dt):
+    return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S.%f')
+
 
 
 def get_sample(s: Path):

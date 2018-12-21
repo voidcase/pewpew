@@ -6,50 +6,11 @@ import config as cfg
 import json
 import re
 import sys
-
-
-LOG_TIMESTAMPS_WHITELIST = {
-    'Sample-3-01',
-    'Sample-4-01',
-    'Sample-3-10',
-    'Sample-4-02',
-    'Sample-4-08',
-    'Sample-3-02',
-    'Sample-4-09',
-    'Sample-2-07',
-    'Sample-1-03',
-    'Sample-1-05',
-    'Sample-4-04',
-    'Sample-3-05',
-    'Sample-3-11',
-    'Sample-4-14',
-    'Sample-4-15',
-    'Sample-3-12',
-    'Sample-4-16',
-    'Sample-3-03',
-    'Sample-1-02',
-    'Sample-3-04',
-    'Sample-3-09',
-    'Sample-4-12',
-    'Sample-4-06',
-    'Sample-4-07',
-    'Sample-3-15',
-    'Sample-3-16',
-    'Sample-3-08',
-    'Sample-3-06',
-    'Sample-4-03',
-    'Sample-4-11',
-    'Sample-3-13',
-    'Sample-4-13',
-    'Sample-2-08',
-    'Sample-3-07',
-}
+import utils
 
 
 class QueueEntry:
-    DEFAULT_TIME_OFFSET = 99.992_831_366_402_77
-
-    def __init__(self, meta):
+    def __init__(self, meta: dict):
         self.meta = meta
         self.master_file = Path(meta["fileinfo"]["filename"])
         self.sample_dir = self.master_file.parent
@@ -61,57 +22,76 @@ class QueueEntry:
 
     def write_data_pairs(self):
         thres = 0.5
-        pairs = self.__find_closest_images(thres)
+        pairs = self.find_closest_images(self.images(), self.get_timestamps_log(), threshold=thres)
         name = f"{self.sample_dir.name}_{self.prefix}_{thres}.json"
-        with open(cfg.DATA_DIR / name, "w") as f:
+        date_dir = Path(cfg.DATA_DIR) / self.__get_date()
+        if not date_dir.exists():
+            date_dir.mkdir()
+        with open(date_dir / name, "w") as f:
             json.dump(pairs, f, indent=4)
 
-    def __find_closest_images(self, threshold=0.5):
-        print(f'matching pairs for {self.master_file}')
-        data_pairs = {}
-        timestamps = (
-            self.__get_timestamps_log() if self.sample_dir.name in LOG_TIMESTAMPS_WHITELIST else self.__get_timestamps()
-        )
-        candidates = sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)
+    def __get_date(self):
+        return re.findall(r'\d{8}', str(self.master_file))[1]
 
-        ts_i = 0
+    def images(self):
+        return sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)
+
+    def images_to_timestamps(self, images: list):
+        return [float(img.stem[len(self.prefix) + 1:]) for img in images]
+
+    @staticmethod
+    def match_closest_distance(li: list, lj: list, threshold: float):
+        """[1,5,7,11], [3, 5, 12] -> [0, 1, None, 2]"""
+        if threshold < 0:
+            raise Exception('threshold can not be less than 0')
+        if np.any(np.append(np.diff(li) < 0, np.diff(lj) < 0)):
+            raise Exception('One or both lists are not sorted')
+
+        if len(li) < len(lj):
+            li, lj = lj, li
+
         i = 0
-        while i < len(candidates) - 1:
-            # We found matches for all timestamps
-            if ts_i == len(timestamps):
-                break
-            ts = timestamps[ts_i]
-            img_ts = (
-                    np.array(
-                        [
-                            float(candidates[i].stem[len(self.prefix) + 1:]),
-                            float(candidates[i + 1].stem[len(self.prefix) + 1:]),
-                        ]
-                    )
-                    - self.DEFAULT_TIME_OFFSET
-            )
-
-            # Skip images taken before collection
-            if ts > img_ts[1]:
-                i += 2
+        j = 0
+        matches = [None for _ in range(len(li))]
+        while i < len(li) - 1 and j < len(lj):
+            lis = np.array([li[i], li[i + 1]])
+            if lj[j] > li[i + 1] and i + 2 < len(li):
+                i += 1
                 continue
 
-            diff = np.abs(img_ts - ts)
+            diff = np.abs(lis - lj[j])
             closest_idx = np.argmin(diff)
 
-            # Only add images if they are a taken close enough
-            if diff[closest_idx] < threshold:
-                data_pairs[candidates[i + closest_idx].name] = ts_i + 1
-                ts_i += 1
-                i += 2
-            else:  # Skip frame if there is not image taken close enough
-                ts_i += 1
+            if diff[closest_idx] > threshold:
+                j += 1
                 continue
 
-        return data_pairs
+            matches[i + closest_idx] = j
+            j += 1
+            i += (1 + closest_idx)
 
-    def __get_timestamps_log(self):
-        fmt = lambda s: datetime.strptime(s, '%Y-%m-%d %H:%M:%S.%f').timestamp()
+            # One element left
+            if len(li[i:]) == 1 and j < len(lj):
+                if np.abs(li[i] - lj[j]) > threshold:
+                    continue
+                matches[i] = j
+
+        return matches
+
+    def find_closest_images(self, images: list, timestamps: list, threshold: float = 0.5):
+        print(f'matching pairs for {self.master_file}')
+        images_ts = self.images_to_timestamps(images)
+        time_diff = images_ts[0] - timestamps[0]
+        images_ts = np.array(images_ts) - time_diff
+        matches = QueueEntry.match_closest_distance(images_ts, timestamps, threshold)
+        pairs = {}
+        for i, img in enumerate(images):
+            if matches[i] is None:
+                continue
+            pairs[str(img)] = matches[i]
+        return pairs
+
+    def get_timestamps_log(self):
         log = Path('/data/staff/common/ML-crystals/eiger_logs/timestamps.log')
         sample, scan = '/'.join(Path(self.master_file).parts[-2:])[:-10].split('/')
         start_re = re.compile(r'^Starting.*{}\/{}_data_000001.*at\s(\d.+)$'.format(sample, scan))
@@ -122,7 +102,7 @@ class QueueEntry:
                 # No point in matching second match if we haven't found first
                 match = start_re.match(line) if len(matches) == 0 else finish_re.match(line)
                 if match is not None:
-                    matches.append(fmt(match.group(1)))
+                    matches.append(utils.fmt(match.group(1)).timestamp())
         if len(matches) != 2:
             raise Exception(f'Could not find start and/or finish time for {self.master_file}')
 
@@ -131,7 +111,7 @@ class QueueEntry:
         start_time = matches[0] + (diff - duration)
         return [start_time + (frame_nbr * self.exposure_time) for frame_nbr in range(self.nbr_frames)]
 
-    def __get_timestamps(self) -> list:
+    def get_timestamps(self) -> list:
         DATEPATH = 'entry/instrument/detector/detectorSpecific/data_collection_date'
         f = h5.File(str(self.master_file))
         try:
