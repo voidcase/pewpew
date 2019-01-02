@@ -19,6 +19,7 @@ class QueueEntry:
         self.zoom = meta.get("zoom1", None)
         self.frontlight = meta.get("backlight", None)
         self.prefix = f"{meta['fileinfo']['prefix']}_{meta['fileinfo']['run_number']}"
+        self.date = utils.get_date(self.sample_dir)
 
     def write_data_pairs(self):
         thres = 0.5
@@ -92,7 +93,7 @@ class QueueEntry:
         return pairs
 
     def get_timestamps_log(self):
-        log = Path('/data/staff/common/ML-crystals/eiger_logs/timestamps.log')
+        log = Path(f'/data/staff/common/ML-crystals/eiger_logs/{self.date}.log')
         sample, scan = '/'.join(Path(self.master_file).parts[-2:])[:-10].split('/')
         start_re = re.compile(r'^Starting.*{}\/{}_data_000001.*at\s(\d.+)$'.format(sample, scan))
         finish_re = re.compile(r'^Finished.*{}\/{}_data_000001.*at\s(\d.+)$'.format(sample, scan))

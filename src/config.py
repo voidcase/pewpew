@@ -1,6 +1,6 @@
 from pathlib import Path
 
-PROPOSAL_DIR = Path('/data/visitors/biomax/20180479/20181119/raw')
+PROPOSAL_DIR = Path('/data/visitors/biomax/20180479')
 PATH_DIR_PROJECT = Path('/data/staff/common/ML-crystals/')
 CBF_DIR = PATH_DIR_PROJECT / 'real_cbf'
 DATA_DIR = PATH_DIR_PROJECT / 'data_pairs'

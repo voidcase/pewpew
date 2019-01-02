@@ -1,16 +1,19 @@
+import sys
 from pathlib import Path
 
+sys.path.append(str(Path().parent.absolute()))
 from dataset.prepare import gen_all_data_pairs, gen_all_cbf
 import config as cfg
+
+COLLECT_DATES = ['20181214']
 
 if __name__ == '__main__':
     res = input('Generate all data_pairs? y/N ')
     if res == 'y':
-        gen_all_data_pairs(src_dir=Path(cfg.PROPOSAL_DIR))
+        for date in COLLECT_DATES:
+            gen_all_data_pairs(src_dir=cfg.PROPOSAL_DIR / date / 'raw')
 
     res = input('Generate all cbfs? y/N ')
     if res == 'y':
-        gen_all_cbf(
-            src_dir=Path(cfg.PROPOSAL_DIR),
-            dst_dir=Path(cfg.CBF_DIR),
-        )
+        for date in COLLECT_DATES:
+            gen_all_cbf(src_dir=cfg.PROPOSAL_DIR / date / 'raw', dst_dir=cfg.CBF_DIR / date)

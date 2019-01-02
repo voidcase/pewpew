@@ -37,9 +37,12 @@ def fmt(dt):
     return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S.%f')
 
 
-
 def get_sample(s: Path):
     return str(re.search('Sample-([0-9]+-[0-9]+)', str(s)).group(1))
+
+
+def get_date(s: Path):
+    return str(re.search(r'(\d{8})/raw', str(s)).group(1))
 
 
 def get_scan(s: Path):
