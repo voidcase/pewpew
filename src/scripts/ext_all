@@ -15,13 +15,15 @@ OUT=out
 
 mkdir $OUT
 
-for sample in $CBF_ROOT/*; do
-	for scan in $sample/*; do
-		for cbf in $scan/*; do
-			FNAME=$(echo $cbf | sed 's/\//__/g' | sed 's/.cbf$//')
-			distl.signal_strength "$cbf" > "$OUT/$FNAME"
-		done
-	done
+for date in $CBF_ROOT/*; do
+    for sample in $CBF_ROOT/*; do
+        for scan in $sample/*; do
+            for cbf in $scan/*; do
+                FNAME=$(echo $cbf | sed 's/\//__/g' | sed 's/.cbf$//' | cut -d'_' -f16-)
+                distl.signal_strength "$cbf" > "$OUT/$FNAME"
+            done
+        done
+    done
 done
 date
 
