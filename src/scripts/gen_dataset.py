@@ -5,7 +5,7 @@ sys.path.append(str(Path().parent.absolute()))
 from dataset.prepare import gen_all_data_pairs, gen_all_cbf
 import config as cfg
 
-COLLECT_DATES = ['20181214']
+COLLECT_DATES = ['20181119', '20181214']
 
 if __name__ == '__main__':
     res = input('Generate all data_pairs? y/N ')
