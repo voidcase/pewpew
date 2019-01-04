@@ -22,8 +22,9 @@ def write_csv():
             for img, frame_nbr in pairs.items():
                 dials_out = (
                         cfg.PATH_DIR_PROJECT
-                        / 'sig_str_out'
-                        / '__data__staff__common__ML-crystals__real_cbf__{sample}__{local_user}_master__out{frame_nbr}'.format(
+                        / 'sig_str_all'
+                        / date_dir
+                        / '{sample}__{local_user}_master__out{frame_nbr}'.format(
                     sample=sample, local_user=local_user, frame_nbr=str(frame_nbr).zfill(6)
                 )
                 )
