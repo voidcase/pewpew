@@ -23,12 +23,14 @@ def write_csv():
                 dials_out = (
                         cfg.PATH_DIR_PROJECT
                         / 'sig_str_all'
-                        / date_dir
+                        / date_dir.name
                         / '{sample}__{local_user}_master__out{frame_nbr}'.format(
-                    sample=sample, local_user=local_user, frame_nbr=str(frame_nbr).zfill(6)
+                    sample=sample, local_user=local_user, frame_nbr=str(frame_nbr + 1).zfill(6)
                 )
                 )
                 y = parse_sigstr(dials_out)
+                print(dials_out)
+                print(f'y: {y}')
                 if y is not None:
                     rows.append([str(snapshot_dir / img), y])
 
