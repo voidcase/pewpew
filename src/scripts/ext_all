@@ -1,27 +1,35 @@
 #!/usr/bin/bash
 
-#SBATCH -J job_name
+#SBATCH -N 1
+#SBATCH --exclusive
+#SBATCH -J sig_str
 #SBATCH -o SLURM.log
 #SBATCH -e ERROR.err
-#SBATCH -t 10:00:00
+#SBATCH -t 2-00:00:00
 #SBATCH --mail-user=isak.e.lindhe@gmail.com
 #SBATCH --mail-type=ALL
 
 date
-# CBF_ROOT=/data/staff/common/ML-crystals/real_cbf
-CBF_ROOT=/mnt/staff/common/ML-crystals/real_cbf
+CBF_ROOT=/data/staff/common/ML-crystals/real_cbf
+#CBF_ROOT=/mnt/staff/common/ML-crystals/real_cbf
 OUT=out
 
-
-mkdir $OUT
-
-for sample in $CBF_ROOT/*; do
-	for scan in $sample/*; do
-		for cbf in $scan/*; do
-			FNAME=$(echo $cbf | sed 's/\//__/g' | sed 's/.cbf$//')
-			distl.signal_strength "$cbf" > "$OUT/$FNAME"
-		done
-	done
+for date_dir in $CBF_ROOT/*; do
+    date=$(echo "$date_dir" | grep -o -E '[0-9]+')
+    mkdir -p "$OUT/$date"
+    for sample in $date_dir/*; do
+        for scan in $sample/*; do
+            for cbf in $scan/*; do
+                FNAME=$(echo $cbf | sed 's/\//__/g' | sed 's/.cbf$//' | cut -d'_' -f16-)
+                if [ ! -f "$OUT/$date/$FNAME" ]; then
+                    echo "Running sig_str for $FNAME"
+                    distl.signal_strength "$cbf" > "$OUT/$date/$FNAME"
+                else
+                    echo "Skipped $FNAME"
+                fi
+            done
+        done
+    done
 done
 date
 

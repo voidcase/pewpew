@@ -10,27 +10,31 @@ def write_csv():
     import csv
 
     rows = []
-    for json_path in cfg.DATA_DIR.iterdir():
-        json_file = json_path.name
-        print(json_file)
-        split = json_file.split('_')
-        sample, local_user, threshold = split[0], '_'.join(split[1:3]), split[3][:-5]
-        snapshot_dir = cfg.PROPOSAL_DIR / sample / 'timed_snapshots'
-        with open(json_path, 'r') as f:
-            pairs = json.load(f)
-        for img, frame_nbr in pairs.items():
-            dials_out = (
-                    cfg.PATH_DIR_PROJECT
-                    / 'sig_str_out'
-                    / '__data__staff__common__ML-crystals__real_cbf__{sample}__{local_user}_master__out{frame_nbr}'.format(
-                sample=sample, local_user=local_user, frame_nbr=str(frame_nbr).zfill(6)
-            )
-            )
-            y = parse_sigstr(dials_out)
-            if y is not None:
-                rows.append([str(snapshot_dir / img), y])
+    for date_dir in cfg.DATA_DIR.iterdir():
+        for json_path in date_dir.iterdir():
+            json_file = json_path.name
+            print(json_file)
+            split = json_file.split('_')
+            sample, local_user, threshold = split[0], '_'.join(split[1:3]), split[3][:-5]
+            snapshot_dir = cfg.PROPOSAL_DIR / f'{date_dir}/raw' / sample / 'timed_snapshots'
+            with open(json_path, 'r') as f:
+                pairs = json.load(f)
+            for img, frame_nbr in pairs.items():
+                dials_out = (
+                        cfg.PATH_DIR_PROJECT
+                        / 'sig_str_all'
+                        / date_dir.name
+                        / '{sample}__{local_user}_master__out{frame_nbr}'.format(
+                    sample=sample, local_user=local_user, frame_nbr=str(frame_nbr + 1).zfill(6)
+                )
+                )
+                y = parse_sigstr(dials_out)
+                print(dials_out)
+                print(f'y: {y}')
+                if y is not None:
+                    rows.append([str(snapshot_dir / img), y])
 
-    with open(cfg.PATH_DIR_PROJECT / 'csv' / f'data_{threshold}.csv', 'w', newline='') as f:
+    with open(cfg.PATH_DIR_PROJECT / 'csv' / f'test{threshold}.csv', 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['filename', 'y'])
         writer.writerows(rows)
@@ -63,8 +67,8 @@ def eiger2cbf_command(out: Path, master: Path, n: int, m: int = None):
 
 
 def number_frames(master: Path):
-    res = subprocess.run([cfg.EIGER_2_CBF, master], stdout=subprocess.PIPE)
-    return int(res.stdout)
+    res = subprocess.Popen([cfg.EIGER_2_CBF, master], stdout=subprocess.PIPE)
+    return int(res.stdout.read())
 
 
 def gen_cbf(sample_dir, dst_dir):
