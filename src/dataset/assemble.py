@@ -30,7 +30,7 @@ def get_meta_file(row):
 
 def split_dataset(df):
     # df -> train, valid, test
-    samples = set(map(get_sample, df['filename']))
+    samples = set(df['sample'])
     train, test = train_test_split(list(samples), test_size=0.4, random_state=42)
     valid, test = train_test_split(list(samples - set(train)), test_size=0.5, random_state=42)
     return train, valid, test
