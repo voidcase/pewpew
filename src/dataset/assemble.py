@@ -14,8 +14,8 @@ tqdm.pandas()
 
 def get_meta_path(sample, scan):
     base_raw_path = Path('/data/visitors/biomax/20180479/20181119/raw')
-    tss_dir = base_raw_path / f'Sample-{sample}/timed_snapshots/'
-    metaglob = tss_dir.glob(f'local-user_{scan}_*.meta.txt')
+    tss_dir = base_raw_path / f'{sample}/timed_snapshots/'
+    metaglob = tss_dir.glob(f'{scan}_*.meta.txt')
     try:
         return next(metaglob)
     except StopIteration:
@@ -51,13 +51,13 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
     df = df[df['y'] > 0]
-    df['sample'] = df['filename'].map(get_sample)
-    df['scan'] = df['filename'].map(get_scan)
+    image_path_pattern = r'raw/([^/]+)/timed_snapshots/(.+)_[0-9.]+.jpeg'
+    grouptups = df['filename'].map(lambda x: re.search(image_path_pattern, x).groups())
+    newcols = pd.DataFrame.from_records(list(grouptups), columns=['sample', 'scan'])
     print('loading meta files')
     metas = {
         (get_sample(p), get_scan(p)): json.load(open(str(p), 'r'))
         for p in base_raw_path.rglob('*.meta.txt')
-        if 'Sample-' in str(p)
     }
 
     def get_zoom_int(row):

@@ -37,13 +37,15 @@ def fmt(dt):
     return datetime.strptime(dt, '%Y-%m-%d %H:%M:%S.%f')
 
 
+# NOTE ONLY USE FOR META PATHS
 def get_sample(s: Path):
-    return str(re.search('Sample-([0-9]+-[0-9]+)', str(s)).group(1))
+    return str(re.search('HARVEST_[0-9]+/([^/]+)/', str(s)).group(1))
 
 
 def get_date(s: Path):
     return str(re.search(r'(\d{8})/raw', str(s)).group(1))
 
 
+# NOTE ONLY USE FOR META PATHS
 def get_scan(s: Path):
-    return str(re.search('local-user_([0-9]+)', str(s)).group(1))
+    return str(re.search('HARVEST_[0-9]+/[^/]+/(.+)_[0-9.]+.meta.txt', str(s)).group(1))
