@@ -53,7 +53,9 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
     df = df[df['y'] > 0]
     image_path_pattern = r'raw/([^/]+)/timed_snapshots/(.+)_[0-9.]+.jpeg'
     grouptups = df['filename'].map(lambda x: re.search(image_path_pattern, x).groups())
-    newcols = pd.DataFrame.from_records(list(grouptups), columns=['sample', 'scan'])
+    df['sample'] = grouptups.map(lambda x: x[0])
+    df['scan'] = grouptups.map(lambda x: x[1])
+
     print('loading meta files')
     metas = {
         (get_sample(p), get_scan(p)): json.load(open(str(p), 'r'))
