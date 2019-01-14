@@ -75,6 +75,8 @@ def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
     print('flip augmentation')
     flipped = df.copy()
     flipped['img'] = flipped['img'].progress_apply(lambda img: cv.flip(img, 1))  # flip along Y axis.
+    df['flipped'] = False
+    flipped['flipped'] = True
     df = pd.concat([df, flipped], axis=0, ignore_index=True)
     return df
 
