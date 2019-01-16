@@ -15,13 +15,12 @@ def imshow(axes, img, title = '', mark_center=True, param_dict = None):
         axes.scatter(img.shape[1]/2,img.shape[0]/2, c='red', marker='x')
     axes.set_title(title)
 
-def image_grid(images: list, titles: list = None):
+def image_grid(images: list, titles: list = None, max_cols = 4):
     if titles is None:
         titles = [''] * len(images)
     else:
         assert(len(images) == len(titles))
         
-    max_cols = 4
     cols = min(len(images), max_cols)
     rows = ceil(len(images), max_cols) // cols
     fig, axes = plt.subplots(rows, cols, figsize=(4.2 * cols, 3.5 * rows))
