@@ -48,13 +48,15 @@ def df_to_xy(df, transform_conf: dict):
 
 
 def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
+    from datetime import datetime
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
-    df = df[df['y'] > 0]
-    image_path_pattern = r'raw/([^/]+)/timed_snapshots/(.+)_[0-9.]+.jpeg'
+    # df = df[df['y'] > 0]
+    image_path_pattern = r'raw/([^/]+)/timed_snapshots/(.+)_([0-9.]+).jpeg'
     grouptups = df['filename'].map(lambda x: re.search(image_path_pattern, x).groups())
     df['sample'] = grouptups.map(lambda x: x[0])
     df['scan'] = grouptups.map(lambda x: x[1])
+    df['time'] = grouptups.map(lambda x: datetime.fromtimestamp(float(x[2])))
 
     print('loading meta files')
     metas = {
