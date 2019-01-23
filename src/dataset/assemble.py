@@ -47,7 +47,7 @@ def df_to_xy(df, transform_conf: dict):
     return x, y
 
 
-def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv')):
+def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv'), has_meta=False):
     from datetime import datetime
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
@@ -58,18 +58,19 @@ def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.cs
     df['scan'] = grouptups.map(lambda x: x[1])
     df['time'] = grouptups.map(lambda x: datetime.fromtimestamp(float(x[2])))
 
-    print('loading meta files')
-    metas = {
-        (get_sample(p), get_scan(p)): json.load(open(str(p), 'r'))
-        for p in base_raw_path.rglob('*.meta.txt')
-    }
+    if has_meta:
+        print('loading meta files')
+        metas = {
+            (get_sample(p), get_scan(p)): json.load(open(str(p), 'r'))
+            for p in base_raw_path.rglob('*.meta.txt')
+        }
 
-    def get_zoom_int(row):
-        zoomtext = metas[(row['sample'], row['scan'])].get('zoom1', 'AAA') or 'Zoom 0'
-        return int(re.search('Zoom ([0-9]+)$', zoomtext).group(1))
+        def get_zoom_int(row):
+            zoomtext = metas[(row['sample'], row['scan'])].get('zoom1', 'AAA') or 'Zoom 0'
+            return int(re.search('Zoom ([0-9]+)$', zoomtext).group(1))
 
-    print('meta loaded')
-    df['zoom'] = df.apply(get_zoom_int, axis=1)
+        print('meta loaded')
+        df['zoom'] = df.apply(get_zoom_int, axis=1)
     return df
 
 
