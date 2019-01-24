@@ -47,7 +47,7 @@ def df_to_xy(df, transform_conf: dict):
     return x, y
 
 
-def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv'), has_meta=False):
+def get_dataset_df(csv_path=Path('/data/staff/common/ML-crystals/csv/data_0.5.csv'), has_meta=True):
     from datetime import datetime
     base_raw_path = Path('/data/staff/common/ML-crystals/meta_sandbox')
     df = pd.read_csv(str(csv_path))
@@ -83,3 +83,14 @@ def get_dataset(df, input_shape):
     x_valid, y_valid = df_to_xy(pick_samples(df_final, valid), transform_conf)
     return [dict(x=x_train, y=y_train), dict(x=x_valid, y=y_valid), dict(x=x_test, y=y_test)]
 
+
+def dataset_batch_generator(df: pd.DataFrame, batch_size=32):
+    i = 0
+    while True:
+        batch = df[i:min([len(df), i+batch_size])]
+        if i+batch_size >= len(df):
+            overflow = max([i+batch_size - len(df), 0])
+            overflow_part = df[0:overflow]
+            batch = pd.concat([batch, overflow_part], axis=0)
+        i = (i + batch_size) % len(df)
+        yield batch
