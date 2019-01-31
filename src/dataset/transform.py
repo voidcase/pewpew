@@ -66,7 +66,7 @@ def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
         yn = df['y']
     mean = np.mean(yn)
     std = np.std(yn)
-    df['y'] = np.log(df['y'])
+    # df['y'] = np.log(df['y'])
     df['y'] = (df['y'] - mean) / std
     return df
 
