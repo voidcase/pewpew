@@ -60,7 +60,7 @@ def normed_img(row):
 def log_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
     print('Y logarithming')
     df['y'] = np.log(df['y'])
-
+    return df
 
 def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
     print('Y normalization')
