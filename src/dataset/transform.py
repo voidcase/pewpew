@@ -57,6 +57,11 @@ def normed_img(row):
 
 # =======================================
 
+def log_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
+    print('Y logarithming')
+    df['y'] = np.log(df['y'])
+
+
 def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
     print('Y normalization')
     df = df.copy()
@@ -118,6 +123,7 @@ def apply_all_transforms(df: pd.DataFrame, conf: dict):
     df = load_and_znorm(df, conf)
     df = row_map(df, 'img', relit_img)
     df = row_map(df, 'img', normed_img)
+    df = log_y(df, conf)
     df = norm_y(df, conf)
     df = aug_hflip(df)
     return df
