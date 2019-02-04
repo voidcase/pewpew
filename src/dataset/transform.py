@@ -85,6 +85,17 @@ def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.concat([df, flipped], axis=0, ignore_index=True)
     return df
 
+def aug_rotate(df: pd.DataFrame, conf):
+    print('rotate augmentation')
+    rots = [df]
+    for angle in [90, 180, 270]:
+        dst = df.copy()
+        shape = conf['input_shape'][:2]
+        center = tuple([side/2 for side in shape)
+        M = cv.getRotationMatrix2D(center, angle, 1.0)
+        dst['img'] = dst['img'].apply(lambda img: cv.warpAffine(img, M, shape))
+        rots.append(dst)
+    return pd.concat(rots, axis=0, ignore_index=True)
 
 def row_map(df: pd.DataFrame, dst: str, func: callable, args=tuple()):
     print(f'row mapping {func.__name__}')
