@@ -91,7 +91,7 @@ def aug_rotate(df: pd.DataFrame, conf):
     for angle in [90, 180, 270]:
         dst = df.copy()
         shape = conf['input_shape'][:2]
-        center = tuple([side/2 for side in shape)
+        center = tuple([side//2 for side in shape])
         M = cv.getRotationMatrix2D(center, angle, 1.0)
         dst['img'] = dst['img'].apply(lambda img: cv.warpAffine(img, M, shape))
         rots.append(dst)
