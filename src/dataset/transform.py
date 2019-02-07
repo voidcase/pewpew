@@ -87,9 +87,11 @@ def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
 
 def aug_rotate(df: pd.DataFrame, conf):
     print('rotate augmentation')
+    df['rotated'] = False
     rots = [df]
     for angle in [90, 180, 270]:
         dst = df.copy()
+        dst['rotated'] == True
         shape = conf['input_shape'][:2]
         center = tuple([side//2 for side in shape])
         M = cv.getRotationMatrix2D(center, angle, 1.0)
