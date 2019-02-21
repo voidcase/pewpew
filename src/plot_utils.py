@@ -37,7 +37,7 @@ def image_grid(images: list, titles: list = None, max_cols=4):
     l = min(len(images), rows * cols)
     for i in range(l):
         imshow(axes[i], images[i], titles[i])
-    plt.close(fig)
+    return fig
 
 
 def show_some(data: pd.DataFrame, seed=None, **kwargs):
