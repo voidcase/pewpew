@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from keras import Model
 
 
 def ceil(n, base):
@@ -26,7 +27,7 @@ def image_grid(images: list, titles: list = None, max_cols=4):
     if titles is None:
         titles = [''] * len(images)
     else:
-        assert (len(images) == len(titles))
+        assert len(images) == len(titles)
 
     cols = min(len(images), max_cols)
     rows = ceil(len(images), max_cols) // cols
@@ -35,6 +36,7 @@ def image_grid(images: list, titles: list = None, max_cols=4):
     l = min(len(images), rows * cols)
     for i in range(l):
         imshow(axes[i], images[i], titles[i])
+    plt.close(fig)
 
 
 def show_some(data: pd.DataFrame, seed=None, **kwargs):
@@ -44,3 +46,23 @@ def show_some(data: pd.DataFrame, seed=None, **kwargs):
         img = row['img']
         plt.imshow(img, **kwargs)
         plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
+
+
+def plot_history(model: Model):
+    fig, (row1, row2) = plt.subplots(2, 2, figsize=(12, 6))
+    row1[0].plot(history.history['acc'])
+    row1[0].set_title('acc')
+    row1[1].plot(history.history['val_acc'])
+    row1[1].set_title('val_acc')
+    row2[0].plot(history.history['loss'])
+    row2[0].set_title('loss')
+    row2[1].plot(history.history['val_loss'])
+    row2[1].set_title('val_loss')
+
+
+def plot_from_generator(gen, y=None, **kwargs):
+    x_batch, y_batch = next(gen)
+    if y is not None:
+        y_batch = y
+    images = [i for i in x_batch]
+    image_grid(x_batch, y_batch, **kwargs)
