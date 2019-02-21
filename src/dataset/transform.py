@@ -57,6 +57,11 @@ def normed_img(row):
 
 # =======================================
 
+def log_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
+    print('Y logarithming')
+    df['y'] = np.log(df['y'])
+    return df
+
 def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
     print('Y normalization')
     df = df.copy()
@@ -66,7 +71,7 @@ def norm_y(df: pd.DataFrame, conf: dict) -> pd.DataFrame:
         yn = df['y']
     mean = np.mean(yn)
     std = np.std(yn)
-    df['y'] = np.log(df['y'])
+    # df['y'] = np.log(df['y'])
     df['y'] = (df['y'] - mean) / std
     return df
 
@@ -80,6 +85,19 @@ def aug_hflip(df: pd.DataFrame) -> pd.DataFrame:
     df = pd.concat([df, flipped], axis=0, ignore_index=True)
     return df
 
+def aug_rotate(df: pd.DataFrame, conf):
+    print('rotate augmentation')
+    df['rotated'] = False
+    rots = [df]
+    for angle in [90, 180, 270]:
+        dst = df.copy()
+        dst['rotated'] == True
+        shape = conf['input_shape'][:2]
+        center = tuple([side//2 for side in shape])
+        M = cv.getRotationMatrix2D(center, angle, 1.0)
+        dst['img'] = dst['img'].apply(lambda img: cv.warpAffine(img, M, shape))
+        rots.append(dst)
+    return pd.concat(rots, axis=0, ignore_index=True)
 
 def row_map(df: pd.DataFrame, dst: str, func: callable, args=tuple()):
     print(f'row mapping {func.__name__}')
@@ -118,6 +136,7 @@ def apply_all_transforms(df: pd.DataFrame, conf: dict):
     df = load_and_znorm(df, conf)
     df = row_map(df, 'img', relit_img)
     df = row_map(df, 'img', normed_img)
+    df = log_y(df, conf)
     df = norm_y(df, conf)
     df = aug_hflip(df)
     return df
