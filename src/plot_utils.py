@@ -87,3 +87,7 @@ def plot_confusion_matrix(ground_truth: list, predictions: list):
         data[label] = matrix[:, i]
     df = pd.DataFrame(data, index=labels)
     sns.heatmap(df, annot=True, fmt='d')
+        axes = sns.heatmap(df, annot=True, fmt='d')
+    axes.set_ylabel('predicted', fontsize='large')
+    axes.set_xlabel('actual', fontsize='x-large')
+    return axes
