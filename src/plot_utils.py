@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from keras import Model
+from keras.callbacks import History
 
 
 def ceil(n, base):
@@ -41,22 +41,13 @@ def image_grid(images: list, titles: list = None, max_cols=4):
 
 
 def show_some(data: pd.DataFrame, seed=None, **kwargs):
-    fig = plt.figure(figsize=(25, 25))
-    for i, (_, row) in enumerate(data.sample(n=min(9, len(data)), random_state=seed).iterrows()):
-        fig.add_subplot(
-            3,
-            3,
-            i + 1,
-            title=f'{row["sample"]}-{row["scan"]} \
-                y:{row["y"]} \
-                z:{row["zoom"] if "zoom" in row else "-"}',
-        )
-        img = row['img']
-        plt.imshow(img, **kwargs)
-        plt.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
+    df_sample = data.sample(n=min(9, len(data)), random_state=seed)
+    zoom = df_sample['zoom'] if 'zoom' in df_sample.columns else '-'
+    titles = df_sample['sample'] + '-' + df_sample['scan'] + ' y:' + df_sample['y'].map(str) + ' z:' + zoom.map(str)
+    return image_grid(df_sample['img'].values, titles.values)
 
 
-def plot_history(model: Model):
+def plot_history(history: History):
     fig, (row1, row2) = plt.subplots(2, 2, figsize=(12, 6))
     row1[0].plot(history.history['acc'])
     row1[0].set_title('acc')
@@ -90,3 +81,4 @@ def plot_confusion_matrix(ground_truth: list, predictions: list):
     axes.set_ylabel('predicted', fontsize='large')
     axes.set_xlabel('actual', fontsize='x-large')
     return axes
+
