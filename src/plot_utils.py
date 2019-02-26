@@ -10,21 +10,18 @@ def ceil(n, base):
     return int(base * np.ceil(float(n) / base))
 
 
-def imshow(axes, img, title='', mark_center=True, param_dict=None):
-    if param_dict is None:
-        param_dict = {}
-
+def imshow(axes, img, title='', mark_center=True, param_dict=None, **kwargs):
     shape = img.shape
     if len(shape) == 3 and shape[2] == 1:
         img = np.reshape(img, shape[:-1])
 
-    axes.imshow(img, **param_dict)
+    axes.imshow(img, **kwargs)
     if mark_center:
         axes.scatter(img.shape[1] / 2, img.shape[0] / 2, c='red', marker='x')
     axes.set_title(title)
 
 
-def image_grid(images: list, titles: list = None, max_cols=4):
+def image_grid(images: list, titles: list = None, max_cols=4, **kwargs):
     if titles is None:
         titles = [''] * len(images)
     else:
@@ -36,7 +33,7 @@ def image_grid(images: list, titles: list = None, max_cols=4):
     axes = axes.flatten()
     l = min(len(images), rows * cols)
     for i in range(l):
-        imshow(axes[i], images[i], titles[i])
+        imshow(axes[i], images[i], titles[i], **kwargs)
     return fig
 
 
@@ -44,7 +41,7 @@ def show_some(data: pd.DataFrame, seed=None, **kwargs):
     df_sample = data.sample(n=min(9, len(data)), random_state=seed)
     zoom = df_sample['zoom'] if 'zoom' in df_sample.columns else '-'
     titles = df_sample['sample'] + '-' + df_sample['scan'] + ' y:' + df_sample['y'].map(str) + ' z:' + zoom.map(str)
-    return image_grid(df_sample['img'].values, titles.values)
+    return image_grid(df_sample['img'].values, titles.values, **kwargs)
 
 
 def plot_history(history: History):
