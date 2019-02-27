@@ -21,11 +21,17 @@ def imshow(axes, img, title='', mark_center=True, param_dict=None, **kwargs):
     axes.set_title(title)
 
 
-def image_grid(images: list, titles: list = None, max_cols=4, **kwargs):
+def image_grid(images, titles=None, max_cols=4, **kwargs):
     if titles is None:
         titles = [''] * len(images)
     else:
         assert len(images) == len(titles)
+
+    if isinstance(images, pd.Series):
+        images = images.values
+
+    if isinstance(titles, pd.Series):
+        titles = titles.values
 
     cols = min(len(images), max_cols)
     rows = ceil(len(images), max_cols) // cols
@@ -41,7 +47,7 @@ def show_some(data: pd.DataFrame, seed=None, **kwargs):
     df_sample = data.sample(n=min(9, len(data)), random_state=seed)
     zoom = df_sample['zoom'] if 'zoom' in df_sample.columns else '-'
     titles = df_sample['sample'] + '-' + df_sample['scan'] + ' y:' + df_sample['y'].map(str) + ' z:' + zoom.map(str)
-    return image_grid(df_sample['img'].values, titles.values, **kwargs)
+    return image_grid(df_sample['img'], titles, **kwargs)
 
 
 def plot_history(history: History):
