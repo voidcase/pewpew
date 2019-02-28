@@ -74,7 +74,7 @@ def plot_confusion_matrix(ground_truth: list, predictions: list):
     assert len(ground_truth) == len(predictions)
     from sklearn.metrics import confusion_matrix
 
-    matrix = confusion_matrix(ground_truth, predictions)
+    matrix = confusion_matrix(ground_truth, predictions).T
     labels = sorted(set(ground_truth))
     data = {}
     for i, label in enumerate(labels):
