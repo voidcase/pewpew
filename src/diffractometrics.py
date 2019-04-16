@@ -2,11 +2,11 @@ from pathlib import Path
 from datetime import datetime
 import numpy as np
 import h5py as h5
-import config as cfg
+import src.config as cfg
 import json
 import re
 import sys
-import utils
+import src.utils as utils
 
 
 class QueueEntry:
@@ -38,7 +38,7 @@ class QueueEntry:
         return sorted((self.sample_dir / cfg.SNAPSHOT_DIR).glob(f"{self.prefix}*.jpeg"), key=lambda p: p.name)
 
     def images_to_timestamps(self, images: list):
-        return [float(img.stem[len(self.prefix) + 1:]) for img in images]
+        return [float(img.stem[len(self.prefix) + 1 :]) for img in images]
 
     @staticmethod
     def match_closest_distance(li: list, lj: list, threshold: float):
@@ -69,7 +69,7 @@ class QueueEntry:
 
             matches[i + closest_idx] = j
             j += 1
-            i += (1 + closest_idx)
+            i += 1 + closest_idx
 
             # One element left
             if len(li[i:]) == 1 and j < len(lj):
