@@ -9,3 +9,4 @@ unittest_data/
 logs/
 mög/
 .idea
+*.pyc
